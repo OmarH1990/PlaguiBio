@@ -120,15 +120,12 @@
       <p class="text-xs text-slate-400 tracking-widest uppercase font-bold">Plataforma Operativa</p>
     </div>
     <label class="label">Correo</label>
-    <input id="li-email" class="input" placeholder="admin@plaguibio.mx" value="admin@plaguibio.mx"/>
+    <input id="li-email" class="input" placeholder="correo@plaguibio.mx" value=""/>
     <label class="label mt-3">Contraseña</label>
-    <input id="li-pass" type="password" class="input" value="admin" onkeypress="if(event.key==='Enter')doLogin()"/>
+    <input id="li-pass" type="password" class="input" value="" onkeypress="if(event.key==='Enter')doLogin()"/>
+    
     <button class="btn btn-primary w-full justify-center mt-5" onclick="doLogin()">Iniciar sesión</button>
-    <div class="mt-5 text-xs text-slate-500 text-center space-y-1">
-      <div>admin@plaguibio.mx / admin</div>
-      <div>ventas@plaguibio.mx / ventas</div>
-      <div>tecnico@plaguibio.mx / tecnico</div>
-    </div>
+    <button class="btn btn-ghost w-full justify-center mt-2 text-xs" onclick="recuperarPassword()">¿Olvidaste tu contraseña?</button>
   </div>
 </div>
 
@@ -208,14 +205,13 @@ function fmtDate(ts){ return ts?new Date(ts).toLocaleDateString('es-MX'):'—'; 
 function fmtDateTime(ts){ return ts?new Date(ts).toLocaleString('es-MX'):'—'; }
 function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
 
+// Modificado para limpiar la base de datos a su estado original/vacio
 function seedDB(){
   const db = {
     users:[
-      {id:'u1',nombre:'Carlos Admin',email:'admin@plaguibio.mx',pass:'admin',rol:'admin',tel:'5555000001'},
-      {id:'u2',nombre:'María Ventas',email:'ventas@plaguibio.mx',pass:'ventas',rol:'ventas',tel:'5555000002'},
-      {id:'u2b',nombre:'Luis Ventas',email:'luis@plaguibio.mx',pass:'ventas',rol:'ventas',tel:'5555000005'},
-      {id:'u3',nombre:'Juan Técnico',email:'tecnico@plaguibio.mx',pass:'tecnico',rol:'tecnico',tel:'5555000003'},
-      {id:'u4',nombre:'Pedro Técnico',email:'pedro@plaguibio.mx',pass:'tecnico',rol:'tecnico',tel:'5555000004'},
+      // Solo dejamos al administrador predeterminado para no perder el acceso
+      // IMPORTANTE: Asegurate de crear este mismo usuario en Authentication de Supabase
+      {id:'u1',nombre:'Administrador',email:'admin@plaguibio.mx',pass:'(ignorado_usa_supabase)',rol:'admin',tel:'5555000000'},
     ],
     catalogs:{
       plagas:['Cucaracha','Roedor','Chinche','Mosquito','Hormiga','Pulga','Termita','Araña'],
@@ -234,6 +230,7 @@ function seedDB(){
       {id:'s5',name:'En Servicio',color:'#ff7a45',icon:'🐀',system:false,order:4},
       {id:'s6',name:'Terminado',color:'#52c41a',icon:'✅',system:true,order:5},
     ],
+    // Tablas limpias listas para trabajar
     leads:[], quotes:[], services:[], finances:[], marketing:[],
     company:{
       nombre:'PlaguiBio S.A. de C.V.', tel:'55 1234 5678', email:'contacto@plaguibio.mx', web:'www.plaguibio.mx',
@@ -242,104 +239,6 @@ function seedDB(){
     },
     settings:{ stageQuoteId:'s3', stageWonId:'s6' }
   };
-
-  const now = Date.now(); const msDay = 24 * 60 * 60 * 1000;
-  
-  for(let i=0; i<150; i++) {
-    const daysAgo = Math.floor(Math.random() * 150); 
-    const creationDate = now - (daysAgo * msDay);
-    const isWon = Math.random() > 0.45; 
-    const isLost = !isWon && Math.random() > 0.6;
-    const isArchived = isWon && daysAgo > 30 && Math.random() > 0.5; 
-    
-    let currentStage = 's1';
-    let currentStatus = 'activo';
-
-    if(isArchived) { currentStage = 's6'; currentStatus = 'archivado'; }
-    else if(isWon) { currentStage = 's6'; }
-    else if(isLost) { currentStatus = 'descartado'; }
-    else {
-      const activeStages = ['s1','s3','s4','s5'];
-      currentStage = activeStages[Math.floor(Math.random() * activeStages.length)];
-    }
-
-    const leadId = uid('L');
-    const plaga = db.catalogs.plagas[Math.floor(Math.random() * db.catalogs.plagas.length)];
-    const canal = db.catalogs.canalesMkt[Math.floor(Math.random() * db.catalogs.canalesMkt.length)];
-    const asesor = Math.random() > 0.5 ? 'u2' : 'u2b';
-    
-    db.leads.push({
-      id: leadId, nombre: `Cliente ${i+1} ` + ['López','García','Martínez','Hernández','Pérez'][i%5],
-      tel: `55 0000 ${String(i).padStart(4, '0')}`, email: `cliente${i}@correo.com`,
-      tipo: db.catalogs.tiposCliente[i % db.catalogs.tiposCliente.length],
-      plaga: plaga, canal: canal, asesorId: asesor, municipio: CDMX[i % CDMX.length], calle: 'Calle Ficticia #'+(i*10),
-      calificacion: db.catalogs.calificaciones[i % db.catalogs.calificaciones.length], score: Math.floor(Math.random() * 40) + 60,
-      stageId: currentStage, status: currentStatus, createdAt: creationDate,
-      archivedAt: isArchived ? creationDate + (20*msDay) : null,
-      motivoDescarte: currentStatus === 'descartado' ? db.catalogs.motivosDescarte[0] : null
-    });
-
-    if (isWon || isArchived) {
-      const quoteId = uid('Q');
-      const srvMonto = (Math.floor(Math.random() * 8) + 6) * 150; 
-      
-      db.quotes.push({
-        id: quoteId, leadId: leadId, fecha: creationDate + (1*msDay), visitas: 1, costoVisita: srvMonto, total: srvMonto, 
-        status: 'aceptada', asesorId: asesor
-      });
-
-      const srvId = uid('S');
-      const isPending = daysAgo < 3 && !isArchived;
-      const tec = Math.random() > 0.5 ? 'u3' : 'u4';
-      
-      const gastoId = uid('F');
-
-      db.services.push({
-        id: srvId, folio: 'V' + Math.floor(Math.random()*90000+10000), leadId: leadId, quoteId: quoteId, plaga: plaga, 
-        monto: srvMonto, tipo: 'normal', status: isPending ? 'creado' : 'finalizado', 
-        fecha: creationDate + (3*msDay), checkin: creationDate + (3*msDay), checkout: creationDate + (3.1*msDay),
-        tecnicoId: tec, 
-        gastos: !isPending ? [{id: gastoId, concepto:'Combustible', monto: 150, categoria:'Combustible'}] : []
-      });
-
-      if(!isPending) {
-        db.finances.push({
-          id: uid('F'), tipo: 'ingreso', categoria: 'Servicio', monto: srvMonto, 
-          metodo: db.catalogs.metodosPago[Math.floor(Math.random()*db.catalogs.metodosPago.length)],
-          fecha: creationDate + (3.2*msDay), ref: srvId, desc: 'Cobro de servicio'
-        });
-        db.finances.push({
-          id: gastoId, tipo: 'gasto', categoria: 'Combustible', monto: 150, metodo: 'Efectivo',
-          fecha: creationDate + (3.2*msDay), ref: srvId, desc: 'Gasto Op: Combustible'
-        });
-      }
-    } else if (currentStage === 's3' || currentStage === 's4' || isLost) {
-        db.quotes.push({
-            id: uid('Q'), leadId: leadId, fecha: creationDate + (1*msDay), visitas: 1, costoVisita: 800, total: 800, 
-            status: isLost ? 'rechazada' : 'enviada', asesorId: asesor
-        });
-    }
-  }
-
-  for(let i=0; i<30; i++) {
-    const daysAgo = Math.floor(Math.random() * 150);
-    const cat = Math.random() > 0.5 ? 'Nómina' : 'Renta';
-    db.finances.push({
-      id: uid('F'), tipo: 'gasto', categoria: cat, monto: Math.floor(Math.random()*5000 + 4000),
-      metodo: 'Transferencia', fecha: now - (daysAgo * msDay), desc: 'Gasto fijo'
-    });
-  }
-
-  for(let i=0; i<5; i++) {
-      let d = new Date(); d.setMonth(d.getMonth() - i);
-      db.catalogs.canalesMkt.forEach(c => {
-          db.marketing.push({
-              id: uid('M'), canal: c, inversion: c==='Orgánico'?0:(Math.floor(Math.random()*2000)+500),
-              leads: Math.floor(Math.random()*15)+5, clientes: Math.floor(Math.random()*5)+1,
-              mes: d.getMonth(), anio: d.getFullYear()
-          });
-      });
-  }
 
   return db;
 }
@@ -351,7 +250,6 @@ let dashCharts = { dash:{}, mkt:{}, ven:{}, tec:{} };
 const supabaseUrl = 'https://ujwqwatrowgoesqeifsw.supabase.co';
 // ⚠️ REEMPLAZA ESTA CLAVE por tu "anon public key" real de Supabase (empieza con eyJhb...)
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd3F3YXRyb3dnb2VzcWVpZnN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0MTIsImV4cCI6MjA5NjU5NTQxMn0.g-Sphk4Y9lEM5NcYW5czj_deUoUa8a9xFrvanqT9NSg';
-// Cambiamos el nombre de la variable de cliente a supabaseClient para no chocar con window.supabase de la librería.
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 async function loadDB(){ 
@@ -384,21 +282,65 @@ function isAdmin(){ return currentUser()?.rol==='admin'; }
 function isVentas(){ return currentUser()?.rol==='ventas'; }
 function isTecnico(){ return currentUser()?.rol==='tecnico'; }
 
-function doLogin(){
+// FUNCIONES DE AUTENTICACION CON SUPABASE
+async function doLogin(){
   const e=document.getElementById('li-email').value.trim().toLowerCase();
   const p=document.getElementById('li-pass').value;
-  const u=DB.users.find(x=>x.email.toLowerCase()===e&&x.pass===p);
-  if(!u){ appAlert('Credenciales inválidas'); return; }
-  session={userId:u.id, rol:u.rol}; sessionStorage.setItem('pb_sess_v11',JSON.stringify(session));
+  
+  if(!e || !p) { appAlert('Ingresa correo y contraseña'); return; }
+
+  // 1. Validar contra el sistema real de usuarios de Supabase
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: e,
+    password: p,
+  });
+
+  if (error) { 
+      appAlert('Credenciales inválidas o error de red: ' + error.message); 
+      return; 
+  }
+
+  // 2. Ligar cuenta de Supabase con el rol y usuario en tu DB
+  const u = DB.users.find(x => x.email.toLowerCase() === e);
+  if(!u){ 
+      appAlert('Autenticado correctamente, pero el usuario no está registrado en el sistema ERP interno.'); 
+      return; 
+  }
+
+  session={userId:u.id, rol:u.rol}; 
+  sessionStorage.setItem('pb_sess_v11',JSON.stringify(session));
   showApp();
 }
+
+async function recuperarPassword() {
+    const e = document.getElementById('li-email').value.trim().toLowerCase();
+    if(!e) { 
+        appAlert('Por favor, escribe tu correo en el campo superior y presiona este botón de nuevo para enviar el enlace.'); 
+        return; 
+    }
+
+    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(e);
+    
+    if(error) { 
+        appAlert('Error al enviar el correo: ' + error.message); 
+    } else { 
+        appAlert('Se ha enviado un enlace de recuperación a tu correo electrónico. Sigue las instrucciones para restablecer tu acceso.'); 
+    }
+}
+
+async function doLogout(){ 
+    await supabaseClient.auth.signOut(); 
+    sessionStorage.removeItem('pb_sess_v11'); 
+    session=null; 
+    location.reload(); 
+}
+
 function showApp(){
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
   buildNav();
   go(isTecnico() ? 'servicios' : 'dashboard');
 }
-function doLogout(){ sessionStorage.removeItem('pb_sess_v11'); session=null; location.reload(); }
 
 const NAV=[
   {id:'dashboard',label:'Dashboard',icon:'📊',roles:['admin']},
