@@ -248,31 +248,53 @@ let dashCharts = { dash:{}, mkt:{}, ven:{}, tec:{} };
 
 // --- INICIO CONFIGURACIÓN SUPABASE ---
 const supabaseUrl = 'https://ujwqwatrowgoesqeifsw.supabase.co';
-// ⚠️ REEMPLAZA ESTA CLAVE por tu "anon public key" real de Supabase (empieza con eyJhb...)
+// ⚠️ REEMPLAZA ESTA CLAVE por tu "anon public key" real de Supabase
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd3F3YXRyb3dnb2VzcWVpZnN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0MTIsImV4cCI6MjA5NjU5NTQxMn0.g-Sphk4Y9lEM5NcYW5czj_deUoUa8a9xFrvanqT9NSg';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 async function loadDB(){ 
     try {
         const { data, error } = await supabaseClient.from('app_state').select('data').eq('id', 1).single();
-        if (error || !data) {
+        if (error) {
+            // Detectar si falta la columna 'id' o si el caché de esquema de Supabase está desactualizado
+            if (error.code === '42703' || error.code === 'PGRST204') {
+                console.error("Falta columna 'id':", error);
+                alert("⚠️ Error de Estructura en Supabase ⚠️\n\nLa tabla 'app_state' no tiene la columna 'id' o el caché está desactualizado.\n\nVe a Supabase > SQL Editor y ejecuta:\nALTER TABLE app_state ADD COLUMN IF NOT EXISTS id integer PRIMARY KEY;\n\nSi ya lo ejecutaste, simplemente RECARGA la página (F5) un par de veces para refrescar el caché.");
+            } else if (error.code !== 'PGRST116') {
+                console.error("Error al leer Supabase:", error);
+                alert("Error al leer la base de datos de la nube: " + error.message + "\nProbablemente falten permisos RLS.");
+            }
             console.log("Inicializando base de datos en Supabase...");
             DB = seedDB();
-            saveDB(); 
+            
+            // Evitar guardar si sabemos que la tabla está rota, para no mostrar doble alerta
+            if (error.code !== '42703' && error.code !== 'PGRST204') {
+                await saveDB(); 
+            }
         } else {
             DB = data.data; 
         }
     } catch(e) {
-        console.error('Error al conectar con Supabase:', e);
+        console.error('Error de conexión:', e);
         DB = seedDB();
     }
 }
 
 async function saveDB(){ 
     try {
-        await supabaseClient.from('app_state').upsert({ id: 1, data: DB });
+        // En Supabase, los errores de RLS no lanzan una excepción, se devuelven en la variable 'error'
+        const { error } = await supabaseClient.from('app_state').upsert({ id: 1, data: DB });
+        
+        if (error) {
+            console.error('Error al guardar en Supabase:', error);
+            if (error.code === '42703' || error.code === 'PGRST204') {
+                console.warn("Guardado abortado: Falta la columna 'id' en la tabla o el caché no se ha refrescado.");
+            } else {
+                alert("No se pudo guardar en la nube.\nMotivo: " + error.message + "\nVerifica las políticas RLS en Supabase.");
+            }
+        }
     } catch (e) {
-        console.error('Error al guardar en Supabase:', e);
+        console.error('Error de red al guardar:', e);
     }
 }
 // --- FIN CONFIGURACIÓN SUPABASE ---
