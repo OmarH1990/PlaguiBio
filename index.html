@@ -349,7 +349,8 @@ let dashCharts = { dash:{}, mkt:{}, ven:{}, tec:{} };
 
 // --- INICIO CONFIGURACIÓN SUPABASE ---
 const supabaseUrl = 'https://ujwqwatrowgoesqeifsw.supabase.co';
-const supabaseKey = 'sb_publishable_4TorgUY03u5o5QaInDYL-A_-3CrjOGb';
+// ⚠️ REEMPLAZA ESTA CLAVE por tu "anon public key" real de Supabase (empieza con eyJhb...)
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd3F3YXRyb3dnb2VzcWVpZnN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0MTIsImV4cCI6MjA5NjU5NTQxMn0.g-Sphk4Y9lEM5NcYW5czj_deUoUa8a9xFrvanqT9NSg';
 // Cambiamos el nombre de la variable de cliente a supabaseClient para no chocar con window.supabase de la librería.
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
