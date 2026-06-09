@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PlaguiBio ERP/CRM v11 - Ultimate Edition</title>
+<title>PlaguiBio ERP/CRM v12 - Relational Cloud</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -117,7 +117,7 @@
            <span class="font-black text-[2rem] leading-none tracking-wider" style="color:var(--pb-green);">BIO</span>
         </div>
       </div>
-      <p class="text-xs text-slate-400 tracking-widest uppercase font-bold">Plataforma Operativa</p>
+      <p class="text-xs text-slate-400 tracking-widest uppercase font-bold text-center">Plataforma Operativa<br>Edition Relacional (v12)</p>
     </div>
     <label class="label">Correo</label>
     <input id="li-email" class="input" placeholder="correo@plaguibio.mx" value=""/>
@@ -145,7 +145,7 @@
              <span class="font-black text-[11px] leading-none tracking-wide" style="color:var(--pb-green);">BIO</span>
            </div>
         </div>
-        <div><div class="nm">PlaguiBio</div><div class="sub">ERP · CRM v11</div></div>
+        <div><div class="nm">PlaguiBio</div><div class="sub">ERP · CRM v12</div></div>
       </div>
       <nav id="nav" class="flex flex-col gap-1 overflow-y-auto pb-4"></nav>
       <div class="mt-auto pt-4 border-t border-white/10 shrink-0">
@@ -167,7 +167,7 @@
           <h1 id="page-title" class="text-xl font-extrabold" style="color:var(--pb-navy)">Dashboard</h1>
           <p id="page-sub" class="text-xs text-slate-500 mt-0.5">Panel de control - PlaguiBio</p>
         </div>
-        <div class="flex items-center gap-3"><span class="chip chip-green pulse pl-3">Sistema Activo</span></div>
+        <div class="flex items-center gap-3"><span class="chip chip-green pulse pl-3">Nube Relacional Activa</span></div>
       </header>
       <div id="page-content" class="p-6 flex-1 bg-[var(--pb-bg)] overflow-x-hidden"></div>
     </main>
@@ -188,7 +188,6 @@ function appPrompt(msg, cb, title='Entrada requerida', placeholder='...') {
     showModal(`<h3 class="text-lg font-bold mb-3 text-navy">${title}</h3><p class="mb-2 text-slate-600 text-sm">${msg}</p><input id="prompt-val" class="input mb-4" placeholder="${placeholder}" autofocus/><div class="text-right flex gap-2 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="if(document.getElementById('prompt-val').value.trim()){closeModal(); window._promptCb(document.getElementById('prompt-val').value.trim());}else{appAlert('Debes ingresar un valor');}">Aceptar</button></div>`);
 }
 
-const LS_KEY='pb_v11_stable';
 const CDMX=['Álvaro Obregón','Azcapotzalco','Benito Juárez','Coyoacán','Cuajimalpa','Cuauhtémoc','Gustavo A. Madero','Iztacalco','Iztapalapa','Magdalena Contreras','Miguel Hidalgo','Milpa Alta','Tláhuac','Tlalpan','Venustiano Carranza','Xochimilco'];
 const EDOMEX=['Atizapán','Coacalco','Cuautitlán','Cuautitlán Izcalli','Chalco','Ecatepec','Huixquilucan','Naucalpan','Nezahualcóyotl','Nicolás Romero','Tecámac','Tlalnepantla','Tultitlán','Valle de Chalco'];
 const ESTADOS=['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Coahuila','Colima','Durango','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas'];
@@ -205,13 +204,10 @@ function fmtDate(ts){ return ts?new Date(ts).toLocaleDateString('es-MX'):'—'; 
 function fmtDateTime(ts){ return ts?new Date(ts).toLocaleString('es-MX'):'—'; }
 function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
 
-// Modificado para limpiar la base de datos a su estado original/vacio
 function seedDB(){
   const db = {
     users:[
-      // Solo dejamos al administrador predeterminado para no perder el acceso
-      // IMPORTANTE: Asegurate de crear este mismo usuario en Authentication de Supabase
-      {id:'u1',nombre:'Administrador',email:'admin@plaguibio.mx',pass:'(ignorado_usa_supabase)',rol:'admin',tel:'5555000000'},
+      {id:'u1',nombre:'Administrador',email:'admin@plaguibio.mx',pass:'-',rol:'admin',tel:'5555000000'},
     ],
     catalogs:{
       plagas:['Cucaracha','Roedor','Chinche','Mosquito','Hormiga','Pulga','Termita','Araña'],
@@ -230,7 +226,6 @@ function seedDB(){
       {id:'s5',name:'En Servicio',color:'#ff7a45',icon:'🐀',system:false,order:4},
       {id:'s6',name:'Terminado',color:'#52c41a',icon:'✅',system:true,order:5},
     ],
-    // Tablas limpias listas para trabajar
     leads:[], quotes:[], services:[], finances:[], marketing:[],
     company:{
       nombre:'PlaguiBio S.A. de C.V.', tel:'55 1234 5678', email:'contacto@plaguibio.mx', web:'www.plaguibio.mx',
@@ -239,63 +234,81 @@ function seedDB(){
     },
     settings:{ stageQuoteId:'s3', stageWonId:'s6' }
   };
-
   return db;
 }
 
 let DB, session=null, currentPage='';
 let dashCharts = { dash:{}, mkt:{}, ven:{}, tec:{} }; 
 
-// --- INICIO CONFIGURACIÓN SUPABASE ---
+// --- INICIO CONFIGURACIÓN SUPABASE RELACIONAL ---
 const supabaseUrl = 'https://ujwqwatrowgoesqeifsw.supabase.co';
-// ⚠️ REEMPLAZA ESTA CLAVE por tu "anon public key" real de Supabase
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd3F3YXRyb3dnb2VzcWVpZnN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0MTIsImV4cCI6MjA5NjU5NTQxMn0.g-Sphk4Y9lEM5NcYW5czj_deUoUa8a9xFrvanqT9NSg';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+// Helpers para guardar individualmente
+async function dbUpsert(table, data) {
+    const { error } = await supabaseClient.from(table).upsert(data);
+    if (error) console.error(`Error Upsert en ${table}:`, error.message);
+}
+async function dbDelete(table, id) {
+    const { error } = await supabaseClient.from(table).delete().eq('id', id);
+    if (error) console.error(`Error Delete en ${table}:`, error.message);
+}
+
 async function loadDB(){ 
     try {
-        const { data, error } = await supabaseClient.from('app_state').select('data').eq('id', 1).single();
-        if (error) {
-            // Detectar si falta la columna 'id' o si el caché de esquema de Supabase está desactualizado
-            if (error.code === '42703' || error.code === 'PGRST204') {
-                console.error("Falta columna 'id':", error);
-                alert("⚠️ Error de Estructura en Supabase ⚠️\n\nLa tabla 'app_state' no tiene la columna 'id' o el caché está desactualizado.\n\nVe a Supabase > SQL Editor y ejecuta:\nALTER TABLE app_state ADD COLUMN IF NOT EXISTS id integer PRIMARY KEY;\n\nSi ya lo ejecutaste, simplemente RECARGA la página (F5) un par de veces para refrescar el caché.");
-            } else if (error.code !== 'PGRST116') {
-                console.error("Error al leer Supabase:", error);
-                alert("Error al leer la base de datos de la nube: " + error.message + "\nProbablemente falten permisos RLS.");
-            }
-            console.log("Inicializando base de datos en Supabase...");
+        // Consultar la tabla de configuración como punto de anclaje
+        const { data: configData, error } = await supabaseClient.from('pb_config').select('*').eq('id', 1).single();
+        
+        if (error && error.code !== 'PGRST116') {
+             console.error("Faltan tablas relacionales:", error);
+             alert("⚠️ Error en Supabase ⚠️\nParece que no has ejecutado el nuevo código SQL. Ve al editor de Supabase y ejecuta el bloque de creación de tablas.");
+             return;
+        }
+
+        if (!configData) {
+            console.log("Inicializando tablas Relacionales en Supabase...");
             DB = seedDB();
-            
-            // Evitar guardar si sabemos que la tabla está rota, para no mostrar doble alerta
-            if (error.code !== '42703' && error.code !== 'PGRST204') {
-                await saveDB(); 
-            }
+            await initializeCloudDB(); 
         } else {
-            DB = data.data; 
+            console.log("Cargando datos desde la nube relacional...");
+            const [u, l, q, s, f, m] = await Promise.all([
+                supabaseClient.from('pb_users').select('*'),
+                supabaseClient.from('pb_leads').select('*'),
+                supabaseClient.from('pb_quotes').select('*'),
+                supabaseClient.from('pb_services').select('*'),
+                supabaseClient.from('pb_finances').select('*'),
+                supabaseClient.from('pb_marketing').select('*')
+            ]);
+            
+            DB = {
+                users: u.data || [], leads: l.data || [], quotes: q.data || [],
+                services: s.data || [], finances: f.data || [], marketing: m.data || [],
+                catalogs: configData.catalogs, company: configData.company, 
+                stages: configData.stages, settings: configData.settings
+            };
         }
     } catch(e) {
-        console.error('Error de conexión:', e);
+        console.error('Error general de conexión:', e);
+        alert("Problema de red. Funcionando con base de datos local vacía por defecto.");
         DB = seedDB();
     }
 }
 
-async function saveDB(){ 
-    try {
-        // En Supabase, los errores de RLS no lanzan una excepción, se devuelven en la variable 'error'
-        const { error } = await supabaseClient.from('app_state').upsert({ id: 1, data: DB });
-        
-        if (error) {
-            console.error('Error al guardar en Supabase:', error);
-            if (error.code === '42703' || error.code === 'PGRST204') {
-                console.warn("Guardado abortado: Falta la columna 'id' en la tabla o el caché no se ha refrescado.");
-            } else {
-                alert("No se pudo guardar en la nube.\nMotivo: " + error.message + "\nVerifica las políticas RLS en Supabase.");
-            }
-        }
-    } catch (e) {
-        console.error('Error de red al guardar:', e);
-    }
+// Guarda toda la estructura local hacia las tablas por primera vez
+async function initializeCloudDB() {
+    await dbUpsert('pb_config', { id: 1, catalogs: DB.catalogs, company: DB.company, stages: DB.stages, settings: DB.settings });
+    if(DB.users.length) await supabaseClient.from('pb_users').upsert(DB.users);
+    if(DB.leads.length) await supabaseClient.from('pb_leads').upsert(DB.leads);
+    if(DB.quotes.length) await supabaseClient.from('pb_quotes').upsert(DB.quotes);
+    if(DB.services.length) await supabaseClient.from('pb_services').upsert(DB.services);
+    if(DB.finances.length) await supabaseClient.from('pb_finances').upsert(DB.finances);
+    if(DB.marketing.length) await supabaseClient.from('pb_marketing').upsert(DB.marketing);
+}
+
+// Guarda solo las configuraciones que viven en pb_config
+function saveConfig() {
+    dbUpsert('pb_config', { id: 1, catalogs: DB.catalogs, company: DB.company, stages: DB.stages, settings: DB.settings });
 }
 // --- FIN CONFIGURACIÓN SUPABASE ---
 
@@ -308,26 +321,13 @@ function isTecnico(){ return currentUser()?.rol==='tecnico'; }
 async function doLogin(){
   const e=document.getElementById('li-email').value.trim().toLowerCase();
   const p=document.getElementById('li-pass').value;
-  
   if(!e || !p) { appAlert('Ingresa correo y contraseña'); return; }
 
-  // 1. Validar contra el sistema real de usuarios de Supabase
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: e,
-    password: p,
-  });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email: e, password: p });
+  if (error) { appAlert('Credenciales inválidas o error de red: ' + error.message); return; }
 
-  if (error) { 
-      appAlert('Credenciales inválidas o error de red: ' + error.message); 
-      return; 
-  }
-
-  // 2. Ligar cuenta de Supabase con el rol y usuario en tu DB
   const u = DB.users.find(x => x.email.toLowerCase() === e);
-  if(!u){ 
-      appAlert('Autenticado correctamente, pero el usuario no está registrado en el sistema ERP interno.'); 
-      return; 
-  }
+  if(!u){ appAlert('Autenticado correctamente, pero el usuario no está registrado en el sistema ERP interno.'); return; }
 
   session={userId:u.id, rol:u.rol}; 
   sessionStorage.setItem('pb_sess_v11',JSON.stringify(session));
@@ -336,18 +336,10 @@ async function doLogin(){
 
 async function recuperarPassword() {
     const e = document.getElementById('li-email').value.trim().toLowerCase();
-    if(!e) { 
-        appAlert('Por favor, escribe tu correo en el campo superior y presiona este botón de nuevo para enviar el enlace.'); 
-        return; 
-    }
-
+    if(!e) { appAlert('Por favor, escribe tu correo en el campo superior y presiona este botón de nuevo.'); return; }
     const { data, error } = await supabaseClient.auth.resetPasswordForEmail(e);
-    
-    if(error) { 
-        appAlert('Error al enviar el correo: ' + error.message); 
-    } else { 
-        appAlert('Se ha enviado un enlace de recuperación a tu correo electrónico. Sigue las instrucciones para restablecer tu acceso.'); 
-    }
+    if(error) { appAlert('Error al enviar el correo: ' + error.message); } 
+    else { appAlert('Se ha enviado un enlace de recuperación a tu correo electrónico.'); }
 }
 
 async function doLogout(){ 
@@ -458,8 +450,10 @@ function openQuickLeadModal(){
 function saveQuickLead(){
   const n=document.getElementById('ql-nombre').value.trim(); const t=document.getElementById('ql-tel').value.trim();
   if(!n||!t){ appAlert('Nombre y teléfono requeridos'); return; }
-  DB.leads.push({id:uid('L'), nombre:n, tel:t, email:'', tipo:document.getElementById('ql-tipo').value, asesorId:document.getElementById('ql-asesor').value, plaga:DB.catalogs.plagas[0], municipio:document.getElementById('ql-muni').value, calle:'', calificacion:'Bueno', score:80, canal:DB.catalogs.canalesMkt[0], stageId:DB.stages.find(s=>s.order===1).id, status:'activo', createdAt:Date.now()});
-  saveDB(); closeModal();
+  const newLead = {id:uid('L'), nombre:n, tel:t, email:'', tipo:document.getElementById('ql-tipo').value, asesorId:document.getElementById('ql-asesor').value, plaga:DB.catalogs.plagas[0], municipio:document.getElementById('ql-muni').value, calle:'', calificacion:'Bueno', score:80, canal:DB.catalogs.canalesMkt[0], stageId:DB.stages.find(s=>s.order===1).id, status:'activo', createdAt:Date.now()};
+  DB.leads.push(newLead);
+  dbUpsert('pb_leads', newLead);
+  closeModal();
   if(currentPage==='pipeline') renderPipeGrid();
   if(currentPage==='clientes') renderCliTable();
 }
@@ -486,8 +480,16 @@ function saveLead(id){
   const n=document.getElementById('f-nombre').value.trim(), t=document.getElementById('f-tel').value.trim();
   if(!n||!t){appAlert('Nombre y teléfono son requeridos');return;}
   const data={nombre:n,tel:t,email:document.getElementById('f-email').value,tipo:document.getElementById('f-tipo').value,plaga:document.getElementById('f-plaga').value, canal:document.getElementById('f-canal').value, asesorId:document.getElementById('f-asesor').value, municipio:document.getElementById('f-muni').value,calle:document.getElementById('f-calle').value,stageId:document.getElementById('f-stage').value};
-  if(id){ Object.assign(DB.leads.find(x=>x.id===id), data); } else { DB.leads.push({id:uid('L'),...data, calificacion:'Bueno', score:80, status:'activo', createdAt:Date.now()}); }
-  saveDB(); closeModal();
+  if(id){ 
+      const item = DB.leads.find(x=>x.id===id);
+      Object.assign(item, data); 
+      dbUpsert('pb_leads', item);
+  } else { 
+      const nL = {id:uid('L'),...data, calificacion:'Bueno', score:80, status:'activo', createdAt:Date.now()};
+      DB.leads.push(nL); 
+      dbUpsert('pb_leads', nL);
+  }
+  closeModal();
   if(currentPage==='pipeline')renderPipeGrid();
   if(currentPage==='clientes')renderCliTable();
 }
@@ -531,11 +533,15 @@ function dropLead(e, destStageId){
   if(dest.order < cur.order){ appAlert('No se recomienda retroceder de etapa. Edita el registro si es un caso especial.'); return; }
   
   l.stageId=destStageId;
+  dbUpsert('pb_leads', l);
+
   if(destStageId===DB.settings.stageQuoteId && !DB.quotes.find(q=>q.leadId===l.id)){
-    DB.quotes.push({id:uid('Q'), leadId:l.id, fecha:Date.now(), visitas:1, costoVisita:0, total:0, status:'borrador', asesorId:session.userId});
+    const newQ = {id:uid('Q'), leadId:l.id, fecha:Date.now(), visitas:1, costoVisita:0, total:0, status:'borrador', asesorId:session.userId};
+    DB.quotes.push(newQ);
+    dbUpsert('pb_quotes', newQ);
     appAlert('Se generó Cotización Borrador para '+l.nombre, 'Automatización');
   }
-  saveDB(); renderPipeGrid();
+  renderPipeGrid();
 }
 
 function discardLead(id) {
@@ -554,7 +560,8 @@ function confirmDiscardLead(id) {
     const m = document.getElementById('discard-motive').value;
     const l = DB.leads.find(x=>x.id===id);
     l.status = 'descartado'; l.motivoDescarte = m; l.descartedAt = Date.now();
-    saveDB(); closeModal();
+    dbUpsert('pb_leads', l);
+    closeModal();
     if(currentPage==='pipeline') renderPipeGrid();
     if(currentPage==='clientes') renderCliTable();
 }
@@ -562,7 +569,8 @@ function confirmDiscardLead(id) {
 function archivarLead(id){
     const l=DB.leads.find(x=>x.id===id);
     l.status = 'archivado'; l.archivedAt = Date.now(); l.archivedBy = session.userId;
-    saveDB(); renderPipeGrid();
+    dbUpsert('pb_leads', l);
+    renderPipeGrid();
 }
 
 let cliTab='activo';
@@ -607,7 +615,8 @@ function renderCliTable(){
 function reactivarLead(id){
     const l=DB.leads.find(x=>x.id===id);
     l.status = 'activo'; l.stageId = DB.stages.find(s=>s.order===1).id; delete l.archivedAt; delete l.archivedBy; delete l.descartedAt;
-    saveDB(); renderCliTable();
+    dbUpsert('pb_leads', l);
+    renderCliTable();
 }
 
 let cotP={mes:new Date().getMonth(), anio:new Date().getFullYear()};
@@ -659,21 +668,29 @@ function editQuote(id){
 function recalcQ(){document.getElementById('q-t').value = (+document.getElementById('q-v').value) * (+document.getElementById('q-c').value);}
 function saveQuote(id){
   const q=DB.quotes.find(x=>x.id===id); q.visitas=+document.getElementById('q-v').value; q.costoVisita=+document.getElementById('q-c').value; q.total=q.visitas*q.costoVisita;
-  saveDB(); closeModal(); renderCotTable();
+  dbUpsert('pb_quotes', q); closeModal(); renderCotTable();
 }
-function changeQStatus(id,st){
+async function changeQStatus(id,st){
   const q=DB.quotes.find(x=>x.id===id); q.status=st;
+  dbUpsert('pb_quotes', q);
+
   if(st==='aceptada'){
     const l=DB.leads.find(x=>x.id===q.leadId);
-    for(let i=0;i<q.visitas;i++){ DB.services.push({id:uid('S'), folio:'V'+Date.now().toString().slice(-6)+(i+1), leadId:q.leadId, quoteId:q.id, plaga:l?.plaga, monto:q.costoVisita, tipo:'normal', status:'creado', fecha:null, tecnicoId:null, gastos:[]}); }
-    if(l) l.stageId=DB.settings.stageWonId;
+    let newServs = [];
+    for(let i=0;i<q.visitas;i++){ 
+        const ns = {id:uid('S'), folio:'V'+Date.now().toString().slice(-6)+(i+1), leadId:q.leadId, quoteId:q.id, plaga:l?.plaga, monto:q.costoVisita, tipo:'normal', status:'creado', fecha:null, tecnicoId:null, gastos:[]};
+        DB.services.push(ns); 
+        newServs.push(ns);
+    }
+    if(newServs.length) await supabaseClient.from('pb_services').upsert(newServs);
+    if(l) { l.stageId=DB.settings.stageWonId; dbUpsert('pb_leads', l); }
     appAlert(`Cotización Aceptada. Se programaron ${q.visitas} servicios pendientes de agendar.`);
   }
   if(st==='rechazada'){
     const l=DB.leads.find(x=>x.id===q.leadId);
-    if(l){ l.status='descartado'; l.motivoDescarte='Cotización rechazada'; l.descartedAt=Date.now(); appAlert('Cotización rechazada. Cliente movido a Descartados.'); }
+    if(l){ l.status='descartado'; l.motivoDescarte='Cotización rechazada'; l.descartedAt=Date.now(); dbUpsert('pb_leads', l); appAlert('Cotización rechazada. Cliente movido a Descartados.'); }
   }
-  saveDB(); renderCotTable();
+  renderCotTable();
 }
 
 function downloadQuotePDF(id){
@@ -786,7 +803,9 @@ function dropCal(e, targetTime){
     if(!s.reagendamientos) s.reagendamientos=[];
     s.reagendamientos.push({de:oldDate, a:d.getTime(), motivo:'Drag & Drop', user:session.userId, ts:Date.now()});
   }
-  s.fecha=d.getTime(); saveDB(); renderProgramacion(document.getElementById('page-content'));
+  s.fecha=d.getTime(); 
+  dbUpsert('pb_services', s);
+  renderProgramacion(document.getElementById('page-content'));
 }
 
 let srvFilter={tec:'', mes:new Date().getMonth(), anio:new Date().getFullYear()};
@@ -910,12 +929,16 @@ function addSrvGasto(id){
     const financeId = uid('F');
     s.gastos.push({id: financeId, concepto: c, monto: m, categoria: c});
 
-    DB.finances.push({
+    const nF = {
         id: financeId, tipo: 'gasto', categoria: c, monto: m, metodo: 'Efectivo',
         fecha: Date.now(), ref: s.folio, desc: 'Gasto Op: ' + c
-    });
+    };
+    DB.finances.push(nF);
 
-    saveDB(); openSrvModal(id);
+    dbUpsert('pb_services', s);
+    dbUpsert('pb_finances', nF);
+
+    openSrvModal(id);
     if(currentPage === 'finanzas') renderFinanzas(document.getElementById('page-content'));
 }
 
@@ -924,7 +947,11 @@ function delSrvGasto(id, idx){
     const gId = s.gastos[idx].id;
     DB.finances = DB.finances.filter(f => f.id !== gId);
     s.gastos.splice(idx,1); 
-    saveDB(); openSrvModal(id); 
+    
+    dbUpsert('pb_services', s);
+    dbDelete('pb_finances', gId);
+
+    openSrvModal(id); 
     if(currentPage === 'finanzas') renderFinanzas(document.getElementById('page-content'));
 }
 
@@ -942,7 +969,8 @@ function saveSrvBase(id){
   s.tecnicoId=document.getElementById('svm-t').value;
   s.monto=+document.getElementById('svm-m').value;
   s.notes=document.getElementById('svm-n').value;
-  saveDB(); appAlert('Datos base actualizados');
+  dbUpsert('pb_services', s); 
+  appAlert('Datos base actualizados');
   if(currentPage==='programacion') renderProgramacion(document.getElementById('page-content'));
   if(currentPage==='servicios') renderSrvGrid();
 }
@@ -959,7 +987,9 @@ function srvAction(id, act){
     appAlert('Cobro registrado. El servicio pasó a "Pendiente de Autorización" para Finanzas.');
   }
   if(act==='cancelar'){ s.status='cancelado'; }
-  saveDB(); closeModal();
+  
+  dbUpsert('pb_services', s); 
+  closeModal();
   if(currentPage==='servicios') renderSrvGrid();
 }
 
@@ -975,13 +1005,18 @@ function uploadEv(id, input){
         canvas.width=img.width*scale; canvas.height=img.height*scale;
         ctx.drawImage(img,0,0,canvas.width,canvas.height);
         s.evidencias.push({url: canvas.toDataURL('image/jpeg', 0.6), ts: Date.now(), user: session.userId});
-        saveDB(); 
+        dbUpsert('pb_services', s);
         if(document.getElementById('ev-container')) openSrvModal(id); 
       }; img.src=e.target.result;
     }; reader.readAsDataURL(file);
   });
 }
-function delEv(idx, id){ const s=DB.services.find(x=>x.id===id); s.evidencias.splice(idx,1); saveDB(); openSrvModal(id); }
+function delEv(idx, id){ 
+    const s=DB.services.find(x=>x.id===id); 
+    s.evidencias.splice(idx,1); 
+    dbUpsert('pb_services', s); 
+    openSrvModal(id); 
+}
 
 let finP={mes:new Date().getMonth(), anio:new Date().getFullYear()};
 function renderFinanzas(c){
@@ -1044,14 +1079,17 @@ function renderFin(){
 function authCobro(srvId, approved){
   const s=DB.services.find(x=>x.id===srvId);
   if(approved){
-    DB.finances.push({id:uid('F'), tipo:'ingreso', categoria:'Servicio', monto:s.cobro.monto, metodo:s.cobro.metodo, fecha:Date.now(), ref:s.folio, desc:'Cobro de Servicio'});
+    const newF = {id:uid('F'), tipo:'ingreso', categoria:'Servicio', monto:s.cobro.monto, metodo:s.cobro.metodo, fecha:Date.now(), ref:s.folio, desc:'Cobro de Servicio'};
+    DB.finances.push(newF);
+    dbUpsert('pb_finances', newF);
     s.status='finalizado'; 
     appAlert('Ingreso aprobado e insertado en Finanzas.');
   } else {
     s.status='terminado'; delete s.cobro; 
     appAlert('Cobro rechazado. El servicio regresa a estado "Terminado". El técnico debe registrar el cobro nuevamente.');
   }
-  saveDB(); renderFinanzas(document.getElementById('page-content'));
+  dbUpsert('pb_services', s);
+  renderFinanzas(document.getElementById('page-content'));
 }
 function openFinModal(tipo){
   const cats=tipo==='ingreso'?DB.catalogs.categoriasIngreso:DB.catalogs.categoriasGasto;
@@ -1078,12 +1116,15 @@ function editFin(id){
     <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="updateFin('${id}')">Guardar</button></div>`);
 }
 function saveFin(tipo){
-  DB.finances.push({id:uid('F'), tipo, monto:+document.getElementById('ff-m').value, categoria:document.getElementById('ff-c').value, metodo:document.getElementById('ff-met').value, fecha:new Date(document.getElementById('ff-f').value).getTime(), desc:document.getElementById('ff-d').value});
-  saveDB(); closeModal(); renderFin();
+  const nF = {id:uid('F'), tipo, monto:+document.getElementById('ff-m').value, categoria:document.getElementById('ff-c').value, metodo:document.getElementById('ff-met').value, fecha:new Date(document.getElementById('ff-f').value).getTime(), desc:document.getElementById('ff-d').value};
+  DB.finances.push(nF);
+  dbUpsert('pb_finances', nF);
+  closeModal(); renderFin();
 }
 function updateFin(id){
   const f=DB.finances.find(x=>x.id===id); f.monto=+document.getElementById('ff-m').value; f.categoria=document.getElementById('ff-c').value; f.desc=document.getElementById('ff-d').value;
-  saveDB(); closeModal(); renderFin();
+  dbUpsert('pb_finances', f);
+  closeModal(); renderFin();
 }
 
 function renderMarketing(c){
@@ -1189,8 +1230,10 @@ function openMktModal(){
     <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveMkt()">Guardar</button></div>`);
 }
 function saveMkt(){
-  DB.marketing.push({id:uid('M'), canal:document.getElementById('mf-c').value, inversion:+document.getElementById('mf-i').value, leads:+document.getElementById('mf-l').value, clientes:+document.getElementById('mf-cl').value, mes:+document.getElementById('mf-m').value, anio:+document.getElementById('mf-a').value});
-  saveDB(); closeModal(); renderMarketing(document.getElementById('page-content'));
+  const nM = {id:uid('M'), canal:document.getElementById('mf-c').value, inversion:+document.getElementById('mf-i').value, leads:+document.getElementById('mf-l').value, clientes:+document.getElementById('mf-cl').value, mes:+document.getElementById('mf-m').value, anio:+document.getElementById('mf-a').value};
+  DB.marketing.push(nM);
+  dbUpsert('pb_marketing', nM);
+  closeModal(); renderMarketing(document.getElementById('page-content'));
 }
 
 function renderProdVentas(c){
@@ -1431,8 +1474,16 @@ function openUserModal(id){
 function saveUser(id){
   const d={nombre:document.getElementById('uf-n').value,email:document.getElementById('uf-e').value,tel:document.getElementById('uf-t').value,pass:document.getElementById('uf-p').value,rol:document.getElementById('uf-r').value};
   if(!d.nombre||!d.email){appAlert('Faltan datos');return}
-  if(id)Object.assign(DB.users.find(x=>x.id===id),d);else DB.users.push({id:uid('u'),...d});
-  saveDB(); closeModal(); renderUsuarios(document.getElementById('page-content'));
+  if(id) {
+      const u = DB.users.find(x=>x.id===id);
+      Object.assign(u,d);
+      dbUpsert('pb_users', u);
+  } else {
+      const u = {id:uid('u'),...d};
+      DB.users.push(u);
+      dbUpsert('pb_users', u);
+  }
+  closeModal(); renderUsuarios(document.getElementById('page-content'));
 }
 
 function renderConfig(c){
@@ -1441,28 +1492,28 @@ function renderConfig(c){
   <div class="card p-5 md:col-span-2"><div class="text-sm font-bold mb-3 text-navy">Catálogos de Sistema</div><div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cfg-cats"></div></div></div>`;
   renderCfgStages(); renderCfgCats();
 }
-function saveCompany(){ ['nombre','tel','email','direccion','rfc'].forEach(k=>DB.company[k]=document.getElementById('co-'+k).value); saveDB(); appAlert('Datos de empresa guardados'); }
+function saveCompany(){ ['nombre','tel','email','direccion','rfc'].forEach(k=>DB.company[k]=document.getElementById('co-'+k).value); saveConfig(); appAlert('Datos de empresa guardados'); }
 function renderCfgStages(){
   document.getElementById('cfg-stages').innerHTML=DB.stages.sort((a,b)=>a.order-b.order).map(s=>`
     <div class="flex items-center gap-2 p-2 border rounded text-sm bg-slate-50">
-      <input class="input py-1 w-16" type="number" value="${s.order}" onchange="DB.stages.find(x=>x.id==='${s.id}').order=+this.value;saveDB()"/>
-      <input type="color" value="${s.color}" class="h-8 w-8 cursor-pointer" onchange="DB.stages.find(x=>x.id==='${s.id}').color=this.value;saveDB()"/>
-      <input class="input py-1" value="${s.icon}" style="width:50px" onchange="DB.stages.find(x=>x.id==='${s.id}').icon=this.value;saveDB()"/>
-      <input class="input py-1" value="${s.name}" ${s.system?'readonly disabled':''} onchange="DB.stages.find(x=>x.id==='${s.id}').name=this.value;saveDB()"/>
+      <input class="input py-1 w-16" type="number" value="${s.order}" onchange="DB.stages.find(x=>x.id==='${s.id}').order=+this.value;saveConfig()"/>
+      <input type="color" value="${s.color}" class="h-8 w-8 cursor-pointer" onchange="DB.stages.find(x=>x.id==='${s.id}').color=this.value;saveConfig()"/>
+      <input class="input py-1" value="${s.icon}" style="width:50px" onchange="DB.stages.find(x=>x.id==='${s.id}').icon=this.value;saveConfig()"/>
+      <input class="input py-1" value="${s.name}" ${s.system?'readonly disabled':''} onchange="DB.stages.find(x=>x.id==='${s.id}').name=this.value;saveConfig()"/>
       ${s.system?'<span class="chip chip-amber px-2 text-[10px]">Protegida</span>':`<button class="btn btn-danger py-1 px-3" onclick="delStage('${s.id}')">✕</button>`}
     </div>`).join('');
 }
-function addStage(){ DB.stages.push({id:uid('s'),name:'Nueva Etapa',color:'#3b82f6',icon:'🐞',system:false,order:DB.stages.length+1}); saveDB(); renderCfgStages(); }
+function addStage(){ DB.stages.push({id:uid('s'),name:'Nueva Etapa',color:'#3b82f6',icon:'🐞',system:false,order:DB.stages.length+1}); saveConfig(); renderCfgStages(); }
 function delStage(id){
     if(DB.leads.some(l=>l.stageId===id)){ appAlert('No puedes borrar una etapa que contiene leads activos.'); return; }
-    DB.stages=DB.stages.filter(x=>x.id!==id); saveDB(); renderCfgStages();
+    DB.stages=DB.stages.filter(x=>x.id!==id); saveConfig(); renderCfgStages();
 }
 function renderCfgCats(){
   const cs=DB.catalogs;
   document.getElementById('cfg-cats').innerHTML=Object.keys(cs).map(k=>`
     <div><div class="label">${k.toUpperCase()}</div>
-      <div class="space-y-1">${cs[k].map((v,i)=>`<div class="flex gap-1"><input class="input py-1 text-sm" value="${v}" onchange="DB.catalogs.${k}[${i}]=this.value;saveDB()"/><button class="btn btn-danger py-1 px-2" onclick="DB.catalogs.${k}.splice(${i},1);saveDB();renderCfgCats()">✕</button></div>`).join('')}</div>
-      <button class="btn btn-outline text-xs mt-1" onclick="DB.catalogs.${k}.push('Nuevo');saveDB();renderCfgCats()">+ Añadir</button>
+      <div class="space-y-1">${cs[k].map((v,i)=>`<div class="flex gap-1"><input class="input py-1 text-sm" value="${v}" onchange="DB.catalogs.${k}[${i}]=this.value;saveConfig()"/><button class="btn btn-danger py-1 px-2" onclick="DB.catalogs.${k}.splice(${i},1);saveConfig();renderCfgCats()">✕</button></div>`).join('')}</div>
+      <button class="btn btn-outline text-xs mt-1" onclick="DB.catalogs.${k}.push('Nuevo');saveConfig();renderCfgCats()">+ Añadir</button>
     </div>`).join('');
 }
 function exportCSV(){
