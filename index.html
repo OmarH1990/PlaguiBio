@@ -75,12 +75,6 @@
   .cal-evt.cortesia{background:#ece7ff;color:#5b3fd1}
   .cal-evt.cancelado{background:#fee;color:#c53030;text-decoration:line-through}
   .cal-evt[draggable="true"]:hover{filter:brightness(0.95)}
-  .pb-logo{display:flex;align-items:center;gap:.6rem}
-  .pb-logo-svg{position:relative; width:44px; height:50px; flex-shrink:0;}
-  .pb-logo-svg svg{position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 4px 6px rgba(8,26,61,0.4));}
-  .pb-logo-text{position:absolute; inset:0; display:flex; flex-col; justify-content:center; align-items:flex-start; padding-left:7px; margin-top:2px;}
-  .pb-logo .nm{color:#fff;font-weight:800;font-size:1.15rem;line-height:1; letter-spacing:0.02em;}
-  .pb-logo .sub{color:var(--pb-green);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase; margin-top:2px;}
   .pulse{position:relative}
   .pulse::before{content:"";position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:var(--pb-green);box-shadow:0 0 0 0 rgba(82,196,26,.6);animation:p 1.6s infinite}
   @keyframes p{0%{box-shadow:0 0 0 0 rgba(82,196,26,.6)}70%{box-shadow:0 0 0 8px rgba(82,196,26,0)}100%{box-shadow:0 0 0 0 rgba(82,196,26,0)}}
@@ -106,16 +100,8 @@
   </div>
   <div class="card-soft w-full max-w-md p-8 relative z-10" style="border-top: 5px solid var(--pb-green);">
     <div class="flex flex-col items-center mb-8">
-      <!-- Escudo Logo Vectorial -->
-      <div class="relative w-32 h-36 mb-3 flex items-center justify-center">
-        <svg viewBox="0 0 100 120" class="absolute inset-0 w-full h-full" style="filter: drop-shadow(0 10px 15px rgba(8,26,61,0.25));">
-           <path d="M10 20 L50 5 L90 20 L85 95 C85 95, 50 115, 50 115 C50 115, 15 95, 15 95 L10 20 Z" fill="var(--pb-navy)" stroke="var(--pb-green)" stroke-width="3" stroke-linejoin="round"/>
-           <path d="M15 90 Q 50 125 110 50 Q 60 105 15 90 Z" fill="var(--pb-green)"/>
-        </svg>
-        <div class="relative z-10 flex flex-col items-start -ml-2 mt-2" style="transform: rotate(-2deg);">
-           <span class="text-white font-black text-2xl leading-none tracking-widest">PLAGUI</span>
-           <span class="font-black text-[2rem] leading-none tracking-wider" style="color:var(--pb-green);">BIO</span>
-        </div>
+      <div class="mb-3 text-center">
+         <span class="text-[var(--pb-navy)] font-black text-4xl tracking-widest">PLAGUI</span><span class="font-black text-4xl text-[var(--pb-green)]">BIO</span>
       </div>
       <p class="text-xs text-slate-400 tracking-widest uppercase font-bold text-center">Plataforma Operativa<br>Edition Relacional (v12)</p>
     </div>
@@ -135,17 +121,9 @@
   <div class="flex min-h-[calc(100vh-6px)]">
     <!-- Sidebar -->
     <aside class="w-64 shrink-0 p-4 flex flex-col gap-1" style="background:linear-gradient(180deg,#081a3d,#0c265c)">
-      <div class="pb-logo mb-5 px-2 pt-2">
-        <div class="pb-logo-svg">
-           <svg viewBox="0 0 100 120">
-             <path d="M10 20 L50 5 L90 20 L85 95 C85 95, 50 115, 50 115 C50 115, 15 95, 15 95 L10 20 Z" fill="var(--pb-navy)" stroke="var(--pb-green)" stroke-width="4" stroke-linejoin="round"/>
-           </svg>
-           <div class="pb-logo-text">
-             <span class="text-white font-black text-[9px] leading-none tracking-wider">PLAGUI</span>
-             <span class="font-black text-[11px] leading-none tracking-wide" style="color:var(--pb-green);">BIO</span>
-           </div>
-        </div>
-        <div><div class="nm">PlaguiBio</div><div class="sub">ERP · CRM v12</div></div>
+      <div class="mb-5 px-2 pt-2">
+         <div class="text-white font-black text-2xl tracking-widest">PLAGUI<span class="text-[var(--pb-green)]">BIO</span></div>
+         <div class="text-[var(--pb-green)] text-[0.65rem] font-bold tracking-widest uppercase mt-1">ERP · CRM v12</div>
       </div>
       <nav id="nav" class="flex flex-col gap-1 overflow-y-auto pb-4"></nav>
       <div class="mt-auto pt-4 border-t border-white/10 shrink-0">
@@ -257,9 +235,7 @@ async function dbDelete(table, id) {
 
 async function loadDB(){ 
     try {
-        // Consultar la tabla de configuración como punto de anclaje
         const { data: configData, error } = await supabaseClient.from('pb_config').select('*').eq('id', 1).single();
-        
         if (error && error.code !== 'PGRST116') {
              console.error("Faltan tablas relacionales:", error);
              alert("⚠️ Error en Supabase ⚠️\nParece que no has ejecutado el nuevo código SQL. Ve al editor de Supabase y ejecuta el bloque de creación de tablas.");
@@ -295,7 +271,6 @@ async function loadDB(){
     }
 }
 
-// Guarda toda la estructura local hacia las tablas por primera vez
 async function initializeCloudDB() {
     await dbUpsert('pb_config', { id: 1, catalogs: DB.catalogs, company: DB.company, stages: DB.stages, settings: DB.settings });
     if(DB.users.length) await supabaseClient.from('pb_users').upsert(DB.users);
@@ -306,7 +281,6 @@ async function initializeCloudDB() {
     if(DB.marketing.length) await supabaseClient.from('pb_marketing').upsert(DB.marketing);
 }
 
-// Guarda solo las configuraciones que viven en pb_config
 function saveConfig() {
     dbUpsert('pb_config', { id: 1, catalogs: DB.catalogs, company: DB.company, stages: DB.stages, settings: DB.settings });
 }
@@ -317,7 +291,6 @@ function isAdmin(){ return currentUser()?.rol==='admin'; }
 function isVentas(){ return currentUser()?.rol==='ventas'; }
 function isTecnico(){ return currentUser()?.rol==='tecnico'; }
 
-// FUNCIONES DE AUTENTICACION CON SUPABASE
 async function doLogin(){
   const e=document.getElementById('li-email').value.trim().toLowerCase();
   const p=document.getElementById('li-pass').value;
@@ -353,12 +326,13 @@ function showApp(){
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
   buildNav();
-  go(isTecnico() ? 'servicios' : 'dashboard');
+  // Regla 1: La pantalla de inicio siempre debe ser pipeline (excepto para técnicos que solo ven servicios)
+  go(isTecnico() ? 'servicios' : 'pipeline');
 }
 
 const NAV=[
-  {id:'dashboard',label:'Dashboard',icon:'📊',roles:['admin']},
   {id:'pipeline',label:'Pipeline Ventas',icon:'🎯',roles:['admin','ventas']},
+  {id:'dashboard',label:'Dashboard',icon:'📊',roles:['admin']},
   {id:'clientes',label:'Clientes',icon:'👥',roles:['admin','ventas']},
   {id:'cotizaciones',label:'Cotizaciones',icon:'📄',roles:['admin','ventas']},
   {id:'programacion',label:'Programación',icon:'📅',roles:['admin','ventas']},
@@ -498,7 +472,7 @@ function renderPipeline(c){
   c.innerHTML=`
   <div class="card p-5 mb-4 flex items-center justify-between flex-wrap gap-3">
     <div><div class="text-xs text-slate-500">Prospectos Activos</div><div class="text-3xl font-extrabold" style="color:var(--pb-navy)">${DB.leads.filter(l=>l.status==='activo').length}</div></div>
-    <div class="text-xs text-slate-600 max-w-xl">Arrastra libremente las tarjetas a la etapa deseada. Al llegar a <b>Terminado</b> podrás archivar al cliente.</div>
+    <div class="text-xs text-slate-600 max-w-xl">Arrastra libremente las tarjetas a la etapa deseada. Los pasos <b>En Servicio</b> y <b>Terminado</b> se avanzan manualmente al arrastrar.</div>
     <button class="btn btn-green" onclick="openQuickLeadModal()">+ Lead Rápido</button>
   </div>
   <div id="pipe-grid" class="pipe-grid"></div>`;
@@ -535,8 +509,12 @@ function dropLead(e, destStageId){
   l.stageId=destStageId;
   dbUpsert('pb_leads', l);
 
+  // Regla 2: Generación automática de borrador al entrar a Cotización
   if(destStageId===DB.settings.stageQuoteId && !DB.quotes.find(q=>q.leadId===l.id)){
-    const newQ = {id:uid('Q'), leadId:l.id, fecha:Date.now(), visitas:1, costoVisita:0, total:0, status:'borrador', asesorId:session.userId};
+    const newQ = {
+        id:uid('Q'), leadId:l.id, fecha:Date.now(), visitas:1, costoVisita:0, total:0, status:'borrador', asesorId:session.userId,
+        visitas_detalle: [{id:uid('vd'), concepto: 'Visita Inicial', monto: 0}]
+    };
     DB.quotes.push(newQ);
     dbUpsert('pb_quotes', newQ);
     appAlert('Se generó Cotización Borrador para '+l.nombre, 'Automatización');
@@ -635,13 +613,14 @@ function renderCotTable(){
   const list=DB.quotes.filter(q=>cotP.mes<0||inPeriod(q.fecha,cotP.mes,cotP.anio));
   document.getElementById('cot-content').innerHTML=`
     <div class="overflow-x-auto"><table>
-      <thead><tr><th>Folio/Fecha</th><th>Cliente</th><th>Visitas</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Folio/Fecha</th><th>Cliente</th><th>Visitas a Programar</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody>${list.length?list.sort((a,b)=>b.fecha-a.fecha).map(q=>{
         const l=DB.leads.find(x=>x.id===q.leadId);
         const stClass={borrador:'chip-amber',enviada:'chip-blue',aceptada:'chip-green',rechazada:'chip-red'}[q.status];
+        const numVisitas = q.visitas_detalle ? q.visitas_detalle.length : q.visitas;
         return `<tr>
           <td><div class="font-bold">${q.id}</div><div class="text-xs text-slate-500">${fmtDate(q.fecha)}</div></td>
-          <td>${l?.nombre||'—'}</td><td>${q.visitas} x ${fmt$(q.costoVisita)}</td>
+          <td>${l?.nombre||'—'}</td><td>${numVisitas} visita(s)</td>
           <td class="font-bold text-green-700">${fmt$(q.total)}</td>
           <td><span class="chip ${stClass}">${q.status.toUpperCase()}</span></td>
           <td><div class="flex gap-1">
@@ -654,22 +633,81 @@ function renderCotTable(){
       }).join(''):'<tr><td colspan="6" class="text-center text-slate-400 py-8">Sin cotizaciones</td></tr>'}</tbody>
     </table></div>`;
 }
+
+// Regla 3: Múltiples visitas con montos independientes
 function editQuote(id){
-  const q=DB.quotes.find(x=>x.id===id);
+  const q = DB.quotes.find(x=>x.id===id);
+  window._tmpQuote = JSON.parse(JSON.stringify(q));
+  
+  // Retrocompatibilidad con cotizaciones antiguas
+  if(!window._tmpQuote.visitas_detalle) {
+      window._tmpQuote.visitas_detalle = Array.from({length: window._tmpQuote.visitas || 1}).map((_, i) => ({
+          id: uid('vd'), concepto: 'Visita ' + (i+1), monto: window._tmpQuote.costoVisita || 0
+      }));
+  }
+
   showModal(`
-    <h3 class="text-lg font-extrabold mb-3" style="color:var(--pb-navy)">Editar Cotización ${q.id}</h3>
-    <div class="grid grid-cols-2 gap-3">
-      <div><label class="label">Cant. Visitas</label><input id="q-v" type="number" class="input" value="${q.visitas}" oninput="recalcQ()"/></div>
-      <div><label class="label">Costo por visita</label><input id="q-c" type="number" class="input" value="${q.costoVisita}" oninput="recalcQ()"/></div>
-      <div class="col-span-2"><label class="label">Total</label><input id="q-t" class="input" value="${q.total}" readonly/></div>
+    <h3 class="text-lg font-extrabold mb-4 text-navy">Cotización ${q.id}</h3>
+    <div class="mb-5">
+      <label class="label">Agregar Nueva Visita / Servicio</label>
+      <div class="flex gap-2">
+        <input id="q-new-c" class="input py-2 text-sm w-full" placeholder="Concepto (ej. Visita Refuerzo)"/>
+        <input id="q-new-m" type="number" class="input py-2 text-sm w-32" placeholder="$ Monto"/>
+        <button class="btn btn-navy py-2 px-4 text-xs" onclick="addQuoteVisita()">Añadir</button>
+      </div>
     </div>
-    <div class="flex gap-2 mt-5 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cerrar</button><button class="btn btn-green" onclick="saveQuote('${id}')">Guardar</button></div>`);
+    
+    <label class="label">Detalle de Visitas a Programar</label>
+    <div id="q-visitas-list" class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2"></div>
+    
+    <div class="text-right font-black text-xl text-green-700 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+        Total Cotización: <span id="q-total-lbl">${fmt$(window._tmpQuote.total)}</span>
+    </div>
+    <div class="flex gap-2 justify-end">
+        <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-green" onclick="saveQuote('${id}')">Guardar</button>
+    </div>`);
+  renderQuoteVisitas();
 }
-function recalcQ(){document.getElementById('q-t').value = (+document.getElementById('q-v').value) * (+document.getElementById('q-c').value);}
+
+function renderQuoteVisitas() {
+    let t = 0;
+    document.getElementById('q-visitas-list').innerHTML = window._tmpQuote.visitas_detalle.length ? window._tmpQuote.visitas_detalle.map((v,i) => {
+        t += Number(v.monto);
+        return `<div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 text-sm shadow-sm">
+            <span class="font-medium text-navy">${v.concepto}</span>
+            <span class="font-bold text-slate-700">${fmt$(v.monto)} <button class="text-red-500 hover:bg-red-50 rounded px-2 ml-2 transition-colors" onclick="delQuoteVisita(${i})">✕ Eliminar</button></span>
+        </div>`;
+    }).join('') : '<div class="text-xs text-slate-400 py-4 text-center">No hay visitas. Agrega una arriba.</div>';
+    
+    window._tmpQuote.total = t;
+    document.getElementById('q-total-lbl').textContent = fmt$(t);
+}
+
+function addQuoteVisita() {
+    const c = document.getElementById('q-new-c').value.trim();
+    const m = +document.getElementById('q-new-m').value;
+    if(!c) return appAlert('Ingresa un concepto descriptivo para la visita.');
+    window._tmpQuote.visitas_detalle.push({id: uid('vd'), concepto: c, monto: m});
+    renderQuoteVisitas();
+    document.getElementById('q-new-c').value = '';
+    document.getElementById('q-new-m').value = '';
+}
+
+function delQuoteVisita(i) {
+    window._tmpQuote.visitas_detalle.splice(i, 1);
+    renderQuoteVisitas();
+}
+
 function saveQuote(id){
-  const q=DB.quotes.find(x=>x.id===id); q.visitas=+document.getElementById('q-v').value; q.costoVisita=+document.getElementById('q-c').value; q.total=q.visitas*q.costoVisita;
-  dbUpsert('pb_quotes', q); closeModal(); renderCotTable();
+  const q = DB.quotes.find(x=>x.id===id); 
+  q.visitas_detalle = window._tmpQuote.visitas_detalle;
+  q.total = window._tmpQuote.total;
+  q.visitas = q.visitas_detalle.length; // para compatibilidad antigua
+  dbUpsert('pb_quotes', q); 
+  closeModal(); renderCotTable();
 }
+
 async function changeQStatus(id,st){
   const q=DB.quotes.find(x=>x.id===id); q.status=st;
   dbUpsert('pb_quotes', q);
@@ -677,15 +715,31 @@ async function changeQStatus(id,st){
   if(st==='aceptada'){
     const l=DB.leads.find(x=>x.id===q.leadId);
     let newServs = [];
-    for(let i=0;i<q.visitas;i++){ 
-        const ns = {id:uid('S'), folio:'V'+Date.now().toString().slice(-6)+(i+1), leadId:q.leadId, quoteId:q.id, plaga:l?.plaga, monto:q.costoVisita, tipo:'normal', status:'creado', fecha:null, tecnicoId:null, gastos:[]};
+    
+    // Convertir el arreglo de visitas en servicios independientes
+    const det = q.visitas_detalle || Array.from({length: q.visitas||1}).map((_,i)=>({concepto:'Visita '+(i+1), monto: q.costoVisita||0}));
+    
+    det.forEach((v, i) => {
+        const ns = {
+            id: uid('S'), folio: 'V'+Date.now().toString().slice(-6)+(i+1), leadId: q.leadId, quoteId: q.id, 
+            plaga: l?.plaga, monto: v.monto, notes: v.concepto, tipo: 'normal', status: 'creado', 
+            fecha: null, tecnicoId: null, gastos: []
+        };
         DB.services.push(ns); 
         newServs.push(ns);
-    }
+    });
+
     if(newServs.length) await supabaseClient.from('pb_services').upsert(newServs);
-    if(l) { l.stageId=DB.settings.stageWonId; dbUpsert('pb_leads', l); }
-    appAlert(`Cotización Aceptada. Se programaron ${q.visitas} servicios pendientes de agendar.`);
+    
+    if(l) { 
+        // Regla 2: Pasa automáticamente a "Programación" cuando se acepta
+        const s4 = DB.stages.find(s=>s.order===3);
+        if(s4) l.stageId = s4.id; 
+        dbUpsert('pb_leads', l); 
+    }
+    appAlert(`Cotización Aceptada. Se han programado ${det.length} servicios en estado pendiente.`);
   }
+  
   if(st==='rechazada'){
     const l=DB.leads.find(x=>x.id===q.leadId);
     if(l){ l.status='descartado'; l.motivoDescarte='Cotización rechazada'; l.descartedAt=Date.now(); dbUpsert('pb_leads', l); appAlert('Cotización rechazada. Cliente movido a Descartados.'); }
@@ -724,9 +778,12 @@ function downloadQuotePDF(id){
   doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(40,40,40);
   doc.text(l?.nombre||'—', 20, 59); doc.text('Tel: '+(l?.tel||'—'), 20, 65); doc.text(l?.email||'Sin correo', 20, 71); doc.text(l?.municipio||'', 20, 77);
 
+  const det = q.visitas_detalle || Array.from({length: q.visitas||1}).map((_,i)=>({concepto:'Visita '+(i+1), monto: q.costoVisita||0}));
+  const bodyRows = det.map(v => [`Manejo Integrado de ${l?.plaga||'Plagas'}\n(${v.concepto})`, '1', fmt$(v.monto), fmt$(v.monto)]);
+
   doc.autoTable({
-      startY: 95, head: [['Concepto / Servicio', 'Cantidad', 'Costo Unitario', 'Importe']],
-      body: [[`Manejo Integrado de ${l?.plaga||'Plagas'} (${l?.tipo||'General'})`, q.visitas, fmt$(q.costoVisita), fmt$(q.total)]], 
+      startY: 95, head: [['Concepto / Detalle', 'Cantidad', 'Costo Unitario', 'Importe']],
+      body: bodyRows, 
       headStyles: {fillColor: colorNavy, textColor: 255, fontStyle: 'bold', fontSize: 11},
       bodyStyles: {fontSize: 10, textColor: 50}, alternateRowStyles: {fillColor: [250,250,250]}, theme: 'grid', margin: {top: 10}
   });
@@ -850,51 +907,102 @@ function renderSrvGrid(){
 }
 
 function openQuickCobro(id){
+    window._tmpSrvId = id;
     showModal(`
-      <h3 class="text-lg font-bold text-navy mb-3">Registrar Cobro de Servicio</h3>
-      <div class="space-y-3">
-        <div><label class="label">Monto (MXN)</label><input id="qc-m" type="number" class="input" value="${DB.services.find(s=>s.id===id).monto}"/></div>
-        <div><label class="label">Método de Pago</label><select id="qc-met" class="select">${DB.catalogs.metodosPago.map(m=>`<option>${m}</option>`).join('')}</select></div>
+      <h3 class="text-lg font-bold text-navy mb-3">Confirmación de Pago y Gastos</h3>
+      
+      <!-- Regla 5: Vista de gastos incluida directamente en Cobro -->
+      <div class="bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
+         <h4 class="font-bold text-sm text-red-900 mb-2">Gastos Operativos (Opcional)</h4>
+         <p class="text-xs text-red-700 mb-3">Si tuviste gastos durante este servicio, regístralos aquí para que se liguen a finanzas.</p>
+         <div id="qc-gastos-list" class="mb-2 space-y-1"></div>
+         <div class="flex gap-2">
+            <select id="qc-g-c" class="select py-1 px-2 text-xs w-1/2">
+                <option value="">Seleccionar Categoría...</option>
+                ${DB.catalogs.categoriasGasto.map(c=>`<option value="${c}">${c}</option>`).join('')}
+            </select>
+            <input id="qc-g-m" type="number" class="input py-1 px-2 text-xs w-24" placeholder="$ Monto"/>
+            <button class="btn btn-danger py-1 px-2 text-xs" onclick="addQCGasto()">Añadir</button>
+         </div>
       </div>
-      <div class="mt-5 flex gap-2 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="srvAction('${id}','cobrar_rapido')">Registrar y Enviar a Auth</button></div>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-sm text-navy mb-2">Detalle de Cobro</h4>
+          <div class="space-y-3">
+            <div><label class="label">Monto a Cobrar (MXN)</label><input id="qc-m" type="number" class="input" value="${DB.services.find(s=>s.id===id).monto}"/></div>
+            <div><label class="label">Método de Pago</label><select id="qc-met" class="select">${DB.catalogs.metodosPago.map(m=>`<option>${m}</option>`).join('')}</select></div>
+          </div>
+      </div>
+      <div class="mt-5 flex gap-2 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="srvAction('${id}','cobrar_rapido')">Registrar Cobro y Enviar</button></div>
     `);
+    renderQCGastos();
+}
+
+function renderQCGastos() {
+    const s = DB.services.find(x=>x.id===window._tmpSrvId);
+    if(!s.gastos) s.gastos = [];
+    document.getElementById('qc-gastos-list').innerHTML = s.gastos.map((g,i) => `<div class="flex justify-between text-xs bg-white p-1 px-2 rounded border border-red-100"><span>${g.concepto}</span><span class="font-bold text-red-700">${fmt$(g.monto)} <button class="ml-2 text-slate-400 hover:text-red-500" onclick="delQCGasto(${i})">×</button></span></div>`).join('');
+}
+
+function addQCGasto() {
+    const s = DB.services.find(x=>x.id===window._tmpSrvId);
+    const c = document.getElementById('qc-g-c').value; 
+    const m = +document.getElementById('qc-g-m').value;
+    if(!c || !m) { appAlert('Debes seleccionar una categoría e ingresar un monto.'); return; }
+    
+    const financeId = uid('F');
+    s.gastos.push({id: financeId, concepto: c, monto: m, categoria: c});
+    const nF = {
+        id: financeId, tipo: 'gasto', categoria: c, monto: m, metodo: 'Efectivo',
+        fecha: Date.now(), ref: s.folio, desc: 'Gasto Op: ' + c
+    };
+    DB.finances.push(nF);
+
+    dbUpsert('pb_services', s);
+    dbUpsert('pb_finances', nF);
+
+    document.getElementById('qc-g-c').value = '';
+    document.getElementById('qc-g-m').value = '';
+    renderQCGastos();
+}
+
+function delQCGasto(idx) {
+    const s = DB.services.find(x=>x.id===window._tmpSrvId);
+    const gId = s.gastos[idx].id;
+    DB.finances = DB.finances.filter(f => f.id !== gId);
+    s.gastos.splice(idx,1); 
+    
+    dbUpsert('pb_services', s);
+    dbDelete('pb_finances', gId);
+    renderQCGastos();
 }
 
 function openSrvModal(id){
   const s=DB.services.find(x=>x.id===id), l=DB.leads.find(x=>x.id===s.leadId);
   const ro = isTecnico() ? 'readonly disabled' : ''; 
-  if(!s.gastos) s.gastos = [];
-  
+  const isProg = currentPage === 'programacion'; // Regla 4
+
   showModal(`
     <h3 class="text-lg font-extrabold mb-1 text-navy">Servicio ${s.folio}</h3>
     <p class="text-xs text-slate-500 mb-4">${l?.nombre||''} - ${s.status.toUpperCase()}</p>
     
+    <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
+        <div class="text-xs text-slate-500 font-bold uppercase mb-1">Dirección del Cliente</div>
+        <div class="text-sm font-medium text-navy">${l?.calle || 'Sin calle registrada'}, ${l?.municipio || 'Sin municipio'}</div>
+    </div>
+
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div><label class="label">Fecha y Hora</label><input id="svm-f" type="datetime-local" class="input" value="${s.fecha?new Date(s.fecha-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):''}" ${ro}/></div>
       <div><label class="label">Técnico</label><select id="svm-t" class="select" ${ro}><option value="">Sin asignar</option>${DB.users.filter(u=>u.rol==='tecnico').map(u=>`<option value="${u.id}" ${s.tecnicoId===u.id?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
       <div><label class="label">Monto Base</label><input id="svm-m" type="number" class="input" value="${s.monto}" ${ro}/></div>
       <div><label class="label">Estado</label><input class="input" value="${s.status==='cobro_pendiente'?'Pend. Auth':s.status}" readonly disabled/></div>
-      <div class="col-span-2"><label class="label">Notas Internas</label><textarea id="svm-n" class="textarea" ${ro}>${s.notes||''}</textarea></div>
+      <div class="col-span-2"><label class="label">Detalles / Notas Internas</label><textarea id="svm-n" class="textarea" ${ro}>${s.notes||''}</textarea></div>
     </div>
     
-    ${!isTecnico()?`<button class="btn btn-outline text-xs mb-4" onclick="saveSrvBase('${id}')">💾 Guardar Cambios Base</button>`:''}
+    ${!isProg && !isTecnico() ? `<button class="btn btn-outline text-xs mb-4" onclick="saveSrvBase('${id}')">💾 Guardar Cambios</button>` : ''}
+    ${isProg && !isTecnico() ? `<button class="btn btn-green w-full mt-2" onclick="saveSrvBase('${id}')">✓ Guardar Programación</button>` : ''}
 
-    <div class="bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
-       <h4 class="font-bold text-sm text-red-900 mb-2">Gastos Operativos del Servicio (Impactan en Finanzas)</h4>
-       <div id="srv-gastos-list" class="mb-2 space-y-1">
-         ${s.gastos.map((g,i) => `<div class="flex justify-between text-xs bg-white p-1 px-2 rounded border border-red-100"><span>${g.concepto}</span><span class="font-bold text-red-700">${fmt$(g.monto)} ${s.status!=='finalizado'?`<button class="ml-2 text-slate-400 hover:text-red-500" onclick="delSrvGasto('${id}',${i})">×</button>`:''}</span></div>`).join('')}
-       </div>
-       ${s.status!=='finalizado'?`
-       <div class="flex gap-2">
-          <select id="sg-c" class="select py-1 px-2 text-xs w-1/2">
-              <option value="">Seleccionar Categoría...</option>
-              ${DB.catalogs.categoriasGasto.map(c=>`<option value="${c}">${c}</option>`).join('')}
-          </select>
-          <input id="sg-m" type="number" class="input py-1 px-2 text-xs w-24" placeholder="$ Monto"/>
-          <button class="btn btn-danger py-1 px-2 text-xs" onclick="addSrvGasto('${id}')">Añadir</button>
-       </div>`:''}
-    </div>
-
+    ${!isProg ? `
     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
       <h4 class="font-bold text-sm text-navy mb-2">📷 Evidencias Fotográficas</h4>
       <div class="flex flex-wrap gap-2 mb-2" id="ev-container">
@@ -917,42 +1025,8 @@ function openSrvModal(id){
         ${isAdmin() && s.status!=='cancelado' && s.status!=='finalizado' ? `<button class="btn btn-danger ml-auto" onclick="srvAction('${id}','cancelar')">Cancelar</button>` : ''}
       </div>
     </div>
+    ` : ''}
   `);
-}
-
-function addSrvGasto(id){
-    const s = DB.services.find(x=>x.id===id);
-    const c = document.getElementById('sg-c').value; 
-    const m = +document.getElementById('sg-m').value;
-    if(!c || !m) { appAlert('Debes seleccionar una categoría e ingresar un monto.'); return; }
-    
-    const financeId = uid('F');
-    s.gastos.push({id: financeId, concepto: c, monto: m, categoria: c});
-
-    const nF = {
-        id: financeId, tipo: 'gasto', categoria: c, monto: m, metodo: 'Efectivo',
-        fecha: Date.now(), ref: s.folio, desc: 'Gasto Op: ' + c
-    };
-    DB.finances.push(nF);
-
-    dbUpsert('pb_services', s);
-    dbUpsert('pb_finances', nF);
-
-    openSrvModal(id);
-    if(currentPage === 'finanzas') renderFinanzas(document.getElementById('page-content'));
-}
-
-function delSrvGasto(id, idx){ 
-    const s = DB.services.find(x=>x.id===id); 
-    const gId = s.gastos[idx].id;
-    DB.finances = DB.finances.filter(f => f.id !== gId);
-    s.gastos.splice(idx,1); 
-    
-    dbUpsert('pb_services', s);
-    dbDelete('pb_finances', gId);
-
-    openSrvModal(id); 
-    if(currentPage === 'finanzas') renderFinanzas(document.getElementById('page-content'));
 }
 
 function saveSrvBase(id){
@@ -970,9 +1044,15 @@ function saveSrvBase(id){
   s.monto=+document.getElementById('svm-m').value;
   s.notes=document.getElementById('svm-n').value;
   dbUpsert('pb_services', s); 
-  appAlert('Datos base actualizados');
-  if(currentPage==='programacion') renderProgramacion(document.getElementById('page-content'));
-  if(currentPage==='servicios') renderSrvGrid();
+  
+  if(currentPage==='programacion') {
+      closeModal();
+      appAlert('Programación guardada con éxito.');
+      renderProgramacion(document.getElementById('page-content'));
+  } else {
+      appAlert('Datos base actualizados');
+      renderSrvGrid();
+  }
 }
 
 function srvAction(id, act){
@@ -984,7 +1064,7 @@ function srvAction(id, act){
     const met = document.getElementById('qc-met').value;
     s.cobro = { monto: m, metodo: met, ts: Date.now(), user: session.userId };
     s.status = 'cobro_pendiente'; 
-    appAlert('Cobro registrado. El servicio pasó a "Pendiente de Autorización" para Finanzas.');
+    appAlert('Cobro registrado y gastos guardados. El servicio pasó a "Pendiente de Autorización" para Finanzas.');
   }
   if(act==='cancelar'){ s.status='cancelado'; }
   
