@@ -1,4 +1,1542 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PlaguiBio ERP/CRM v12 - Relational Cloud</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --pb-navy:#081a3d; --pb-navy-2:#0c265c; --pb-teal:#13315c; --pb-teal-2:#1c4480;
+    --pb-green:#78c13b; --pb-green-2:#65a628;
+    --pb-bg:#f4f7fb; --pb-card:#ffffff; --pb-muted:#64748b; --pb-border:#e6ecf3;
+    --pb-orange:#ff7a45; --pb-purple:#7c5cff; --pb-pink:#ff5c8a; --pb-yellow:#ffb020;
+    --pb-blue:#3b82f6; --pb-red:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{background:var(--pb-bg);font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0f172a;margin:0}
+  .top-accent{height:6px;background:linear-gradient(90deg,var(--pb-teal) 0%,var(--pb-teal) 55%,var(--pb-green) 55%,var(--pb-green) 100%)}
+  .card{background:#fff;border:1px solid var(--pb-border);border-radius:18px;box-shadow:0 1px 3px rgba(15,31,77,.04)}
+  .card-soft{background:#fff;border-radius:18px;box-shadow:0 4px 16px rgba(11,37,69,.06)}
+  .chip{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em}
+  .chip-green{background:#e8f9df;color:#3f9d10} .chip-navy{background:#e6ecf7;color:#0b2545}
+  .chip-teal{background:#dff5f6;color:#0c7c80} .chip-red{background:#fee;color:#c53030}
+  .chip-amber{background:#fff3d6;color:#a86b00} .chip-purple{background:#ece7ff;color:#5b3fd1}
+  .chip-orange{background:#fff0e6;color:#ea580c} .chip-blue{background:#e0f2fe;color:#0284c7}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem 1rem;border-radius:12px;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .15s;border:1px solid transparent;white-space:nowrap}
+  .btn:disabled{opacity:0.6;cursor:not-allowed}
+  .btn-primary{background:var(--pb-teal);color:#fff} .btn-primary:hover:not(:disabled){background:var(--pb-teal-2)}
+  .btn-green{background:var(--pb-green);color:#fff} .btn-green:hover:not(:disabled){background:var(--pb-green-2)}
+  .btn-navy{background:var(--pb-navy);color:#fff} .btn-navy:hover:not(:disabled){background:var(--pb-navy-2)}
+  .btn-outline{background:#fff;border-color:var(--pb-border);color:var(--pb-navy)} .btn-outline:hover:not(:disabled){background:#f1f5fb}
+  .btn-danger{background:#ef4444;color:#fff} .btn-danger:hover:not(:disabled){background:#dc2626}
+  .btn-ghost{background:transparent;color:var(--pb-navy)} .btn-ghost:hover:not(:disabled){background:#f1f5fb}
+  .input,.select,.textarea{width:100%;padding:.6rem .85rem;border:1px solid var(--pb-border);border-radius:12px;font-size:.875rem;background:#fff}
+  .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--pb-teal);box-shadow:0 0 0 3px rgba(17,153,158,.12)}
+  .input[readonly],.select[disabled],.textarea[readonly]{background:#f8fafc;cursor:not-allowed;color:#64748b}
+  .label{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;display:block}
+  .nav-item{display:flex;align-items:center;gap:.8rem;padding:.7rem 1rem;border-radius:12px;color:#cbd5e1;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s}
+  .nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+  .nav-item.active{background:linear-gradient(135deg,var(--pb-teal),var(--pb-green));color:#fff;box-shadow:0 6px 18px rgba(17,153,158,.35)}
+  .nav-item .ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:1rem}
+  .nav-item.active .ic{background:rgba(255,255,255,.18)}
+  .kpi{display:flex;flex-direction:column;gap:.4rem;padding:1.1rem 1.2rem;background:#fff;border:1px solid var(--pb-border);border-radius:18px}
+  .kpi-top{display:flex;align-items:center;gap:.85rem}
+  .kpi-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#fff}
+  .kpi-val{font-size:1.6rem;font-weight:800;color:#0b2545;line-height:1}
+  .kpi-lbl{font-size:.8rem;color:#64748b;margin-top:.1rem}
+  .pipe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;align-items:start}
+  .stage-card{background:#fff;border-radius:18px;border:1px solid var(--pb-border);overflow:hidden;display:flex;flex-direction:column;min-height:200px;max-height:75vh;box-shadow:0 2px 8px rgba(11,37,69,.05)}
+  .stage-head{padding:1rem .9rem;display:flex;align-items:center;justify-content:space-between;color:#fff;font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase}
+  .stage-icon-big{font-size:1.7rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
+  .stage-body{padding:.7rem;flex:1;overflow-y:auto;background:#fafcff}
+  .lead-card{background:#fff;border:1px solid var(--pb-border);border-radius:14px;padding:.7rem;margin-bottom:.55rem;cursor:grab;transition:all .15s;box-shadow:0 1px 2px rgba(15,31,77,.04)}
+  .lead-card:hover{box-shadow:0 6px 16px rgba(15,31,77,.08);transform:translateY(-2px)}
+  .lead-card.dragging{opacity:.4}
+  .modal-bg{position:fixed;inset:0;background:rgba(11,37,69,.55);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
+  .modal{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.3)}
+  .tab{padding:.7rem 1.3rem;border-radius:12px;color:#64748b;font-weight:600;cursor:pointer;font-size:.875rem;background:transparent;border:none}
+  .tab.active{background:var(--pb-navy);color:#fff}
+  table{width:100%;font-size:.85rem;border-collapse:collapse}
+  th{text-align:left;padding:.85rem;background:#f8fafc;font-size:.7rem;text-transform:uppercase;color:#64748b;font-weight:700;letter-spacing:.05em}
+  td{padding:.85rem;border-top:1px solid #f1f5f9}
+  tr:hover td{background:#f8fbfd}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-cell{background:#fff;border:1px solid var(--pb-border);border-radius:10px;min-height:96px;padding:.4rem;font-size:.75rem;position:relative;transition:all .2s}
+  .cal-cell.drag-over{background:#eef2f6;border-color:var(--pb-blue);border-style:dashed}
+  .cal-cell .d{position:absolute;top:.3rem;right:.5rem;color:#94a3b8;font-weight:600;font-size:.7rem}
+  .cal-evt{display:block;padding:.18rem .35rem;border-radius:6px;font-size:.65rem;margin-bottom:2px;font-weight:600;cursor:pointer;line-height:1.2}
+  .cal-evt.normal{background:#dff5f6;color:#0c7c80}
+  .cal-evt.garantia{background:#e8f9df;color:#3f9d10}
+  .cal-evt.cortesia{background:#ece7ff;color:#5b3fd1}
+  .cal-evt.cancelado{background:#fee;color:#c53030;text-decoration:line-through}
+  .cal-evt[draggable="true"]:hover{filter:brightness(0.95)}
+  .pulse{position:relative}
+  .pulse::before{content:"";position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:var(--pb-green);box-shadow:0 0 0 0 rgba(82,196,26,.6);animation:p 1.6s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(82,196,26,.6)}70%{box-shadow:0 0 0 8px rgba(82,196,26,0)}100%{box-shadow:0 0 0 0 rgba(82,196,26,0)}}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .img-preview{width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--pb-border);cursor:pointer;transition:transform .2s}
+  .img-preview:hover{transform:scale(1.05)}
+  .srv-action-btn{font-size:0.65rem; padding:0.3rem 0; flex:1; text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- MODAL ROOT -->
+<div id="modal-root"></div>
+
+<!-- LOGIN -->
+<div id="login-view" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden" style="background:linear-gradient(135deg,#081a3d 0%,#0c265c 100%)">
+  <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20">
+    <svg class="absolute w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+      <path d="M0 100 L100 0 L100 100 Z" fill="var(--pb-green)"></path>
+    </svg>
+  </div>
+  <div class="card-soft w-full max-w-md p-8 relative z-10" style="border-top: 5px solid var(--pb-green);">
+    <div class="flex flex-col items-center mb-8">
+      <div class="mb-3 text-center">
+         <span class="text-[var(--pb-navy)] font-black text-4xl tracking-widest">PLAGUI</span><span class="font-black text-4xl text-[var(--pb-green)]">BIO</span>
+      </div>
+      <p class="text-xs text-slate-400 tracking-widest uppercase font-bold text-center">Plataforma Operativa<br>Edition Relacional (v12)</p>
+    </div>
+    <label class="label">Correo</label>
+    <input id="li-email" class="input" placeholder="correo@plaguibio.mx" value=""/>
+    <label class="label mt-3">Contraseña</label>
+    <input id="li-pass" type="password" class="input" value="" onkeypress="if(event.key==='Enter')doLogin()"/>
+    
+    <button class="btn btn-primary w-full justify-center mt-5" onclick="doLogin()">Iniciar sesión</button>
+    <button class="btn btn-ghost w-full justify-center mt-2 text-xs" onclick="recuperarPassword()">¿Olvidaste tu contraseña?</button>
+  </div>
+</div>
+
+<!-- APP MAIN -->
+<div id="app-view" class="hidden">
+  <div class="top-accent"></div>
+  <div class="flex min-h-[calc(100vh-6px)]">
+    <!-- Sidebar -->
+    <aside class="w-64 shrink-0 p-4 flex flex-col gap-1" style="background:linear-gradient(180deg,#081a3d,#0c265c)">
+      <div class="mb-5 px-2 pt-2">
+         <div class="text-white font-black text-2xl tracking-widest">PLAGUI<span class="text-[var(--pb-green)]">BIO</span></div>
+         <div class="text-[var(--pb-green)] text-[0.65rem] font-bold tracking-widest uppercase mt-1">ERP · CRM v12</div>
+      </div>
+      <nav id="nav" class="flex flex-col gap-1 overflow-y-auto pb-4"></nav>
+      <div class="mt-auto pt-4 border-t border-white/10 shrink-0">
+        <div class="flex items-center gap-3 px-2 py-2">
+          <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white font-bold" id="user-avatar"></div>
+          <div class="flex-1 min-w-0">
+            <div class="text-white text-sm font-semibold truncate" id="user-name"></div>
+            <div class="text-slate-400 text-xs" id="user-role"></div>
+          </div>
+          <button class="text-slate-300 hover:text-white text-xs" onclick="doLogout()" title="Salir">⎋</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto relative">
+      <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+        <div>
+          <h1 id="page-title" class="text-xl font-extrabold" style="color:var(--pb-navy)">Dashboard</h1>
+          <p id="page-sub" class="text-xs text-slate-500 mt-0.5">Panel de control - PlaguiBio</p>
+        </div>
+        <div class="flex items-center gap-3"><span class="chip chip-green pulse pl-3">Nube Relacional Activa</span></div>
+      </header>
+      <div id="page-content" class="p-6 flex-1 bg-[var(--pb-bg)] overflow-x-hidden"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+function showModal(html){
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal p-6 relative"><button class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold" onclick="closeModal()">✕</button>${html}</div></div>`;
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+
+function appAlert(msg, title='Aviso') {
+    showModal(`<h3 class="text-lg font-bold mb-3 text-navy">${title}</h3><p class="text-slate-600">${msg}</p><div class="mt-5 text-right"><button class="btn btn-primary" onclick="closeModal()">Aceptar</button></div>`);
+}
+function appPrompt(msg, cb, title='Entrada requerida', placeholder='...') {
+    window._promptCb = cb;
+    showModal(`<h3 class="text-lg font-bold mb-3 text-navy">${title}</h3><p class="mb-2 text-slate-600 text-sm">${msg}</p><input id="prompt-val" class="input mb-4" placeholder="${placeholder}" autofocus/><div class="text-right flex gap-2 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="if(document.getElementById('prompt-val').value.trim()){closeModal(); window._promptCb(document.getElementById('prompt-val').value.trim());}else{appAlert('Debes ingresar un valor');}">Aceptar</button></div>`);
+}
+
+const CDMX=['Álvaro Obregón','Azcapotzalco','Benito Juárez','Coyoacán','Cuajimalpa','Cuauhtémoc','Gustavo A. Madero','Iztacalco','Iztapalapa','Magdalena Contreras','Miguel Hidalgo','Milpa Alta','Tláhuac','Tlalpan','Venustiano Carranza','Xochimilco'];
+const EDOMEX=['Atizapán','Coacalco','Cuautitlán','Cuautitlán Izcalli','Chalco','Ecatepec','Huixquilucan','Naucalpan','Nezahualcóyotl','Nicolás Romero','Tecámac','Tlalnepantla','Tultitlán','Valle de Chalco'];
+const ESTADOS=['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Coahuila','Colima','Durango','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas'];
+
+function buildMuniOptions(selected=''){
+  return `<optgroup label="CDMX">${CDMX.map(x=>`<option ${selected===x?'selected':''}>${x}</option>`).join('')}</optgroup>
+          <optgroup label="Estado de México">${EDOMEX.map(x=>`<option ${selected===x?'selected':''}>${x}</option>`).join('')}</optgroup>
+          <optgroup label="Otros Estados">${ESTADOS.map(x=>`<option ${selected===x?'selected':''}>${x}</option>`).join('')}</optgroup>`;
+}
+
+function uid(p='id'){ return p+'_'+crypto.randomUUID().split('-')[0]; }
+function fmt$(n){ return '$'+(Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(ts){ return ts?new Date(ts).toLocaleDateString('es-MX'):'—'; }
+function fmtDateTime(ts){ return ts?new Date(ts).toLocaleString('es-MX'):'—'; }
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+
+function seedDB(){
+  const db = {
+    users:[
+      {id:'u1',nombre:'Administrador',email:'admin@plaguibio.mx',pass:'-',rol:'admin',tel:'5555000000'},
+    ],
+    catalogs:{
+      plagas:['Cucaracha','Roedor','Chinche','Mosquito','Hormiga','Pulga','Termita','Araña'],
+      tiposCliente:['Hogar','Negocio','Transporte'],
+      calificaciones:['Excelente','Bueno','Regular','Malo'],
+      metodosPago:['Efectivo','Transferencia','Tarjeta'],
+      categoriasGasto:['Insumos','Combustible','Equipo','Nómina','Renta','Servicios','Marketing','Otros'],
+      categoriasIngreso:['Servicio','Garantía cobrada','Otros'],
+      motivosDescarte:['Precio elevado','Sin respuesta','Eligió competencia','Fuera de zona','Otro'],
+      canalesMkt:['Meta Ads','Google Ads','WhatsApp','Referidos','Orgánico'],
+    },
+    stages:[
+      {id:'s1',name:'Generación de Lead',color:'#11999E',icon:'🐜',system:true,order:1},
+      {id:'s3',name:'Cotización',color:'#7c5cff',icon:'🕷️',system:true,order:2},
+      {id:'s4',name:'Programación',color:'#ffb020',icon:'📅',system:true,order:3},
+      {id:'s5',name:'En Servicio',color:'#ff7a45',icon:'🐀',system:false,order:4},
+      {id:'s6',name:'Terminado',color:'#52c41a',icon:'✅',system:true,order:5},
+    ],
+    leads:[], quotes:[], services:[], finances:[], marketing:[],
+    company:{
+      nombre:'PlaguiBio S.A. de C.V.', tel:'55 1234 5678', email:'contacto@plaguibio.mx', web:'www.plaguibio.mx',
+      facebook:'@plaguibio', instagram:'@plaguibio.mx', direccion:'Insurgentes Sur 123, CDMX', rfc:'PBI240101XXX',
+      notas:'Empresa certificada.', legal:'Cotización válida por 7 días. Pago contra entrega.'
+    },
+    settings:{ stageQuoteId:'s3', stageWonId:'s6' }
+  };
+  return db;
+}
+
+let DB, session=null, currentPage='';
+let dashCharts = { dash:{}, mkt:{}, ven:{}, tec:{} }; 
+
+// --- INICIO CONFIGURACIÓN SUPABASE RELACIONAL ---
+const supabaseUrl = 'https://ujwqwatrowgoesqeifsw.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd3F3YXRyb3dnb2VzcWVpZnN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0MTIsImV4cCI6MjA5NjU5NTQxMn0.g-Sphk4Y9lEM5NcYW5czj_deUoUa8a9xFrvanqT9NSg';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// Helpers para guardar individualmente con validación
+async function dbUpsert(table, data) {
+    const { error } = await supabaseClient.from(table).upsert(data);
+    if (error) {
+        console.error(`Error Upsert en ${table}:`, error.message);
+        if(error.message.includes("does not exist") || error.message.includes("column")) {
+            alert(`⚠️ Error de Base de Datos ⚠️\nFalta una columna en la tabla "${table}".\nDetalle: ${error.message}\n\nPor favor asegúrate de ejecutar el script SQL en Supabase para crear las columnas necesarias.`);
+        }
+    }
+}
+async function dbDelete(table, id) {
+    const { error } = await supabaseClient.from(table).delete().eq('id', id);
+    if (error) console.error(`Error Delete en ${table}:`, error.message);
+}
+
+async function loadDB(){ 
+    try {
+        const { data: configData, error } = await supabaseClient.from('pb_config').select('*').eq('id', 1).single();
+        if (error && error.code !== 'PGRST116') {
+             console.error("Faltan tablas relacionales:", error);
+             alert("⚠️ Error en Supabase ⚠️\nParece que no has ejecutado el nuevo código SQL. Ve al editor de Supabase y ejecuta el bloque de creación de tablas.");
+             return;
+        }
+
+        if (!configData) {
+            console.log("Inicializando tablas Relacionales en Supabase...");
+            DB = seedDB();
+            await initializeCloudDB(); 
+        } else {
+            console.log("Cargando datos desde la nube relacional...");
+            const [u, l, q, s, f, m] = await Promise.all([
+                supabaseClient.from('pb_users').select('*'),
+                supabaseClient.from('pb_leads').select('*'),
+                supabaseClient.from('pb_quotes').select('*'),
+                supabaseClient.from('pb_services').select('*'),
+                supabaseClient.from('pb_finances').select('*'),
+                supabaseClient.from('pb_marketing').select('*')
+            ]);
+            
+            DB = {
+                users: u.data || [], leads: l.data || [], quotes: q.data || [],
+                services: s.data || [], finances: f.data || [], marketing: m.data || [],
+                catalogs: configData.catalogs, company: configData.company, 
+                stages: configData.stages, settings: configData.settings
+            };
+
+            // Parche de normalización: PostgreSQL suele devolver columnas en minúsculas.
+            DB.finances.forEach(fin => {
+                fin.isInvestment = fin.isInvestment !== undefined ? fin.isInvestment : (fin.isinvestment === true);
+            });
+            DB.leads.forEach(ld => {
+                ld.campanaId = ld.campanaId !== undefined ? ld.campanaId : (ld.campanaid || '');
+            });
+
+            // Limpieza de Base de Datos:
+            // Borrar automáticamente de Finanzas cualquier gasto ligado a un servicio "Pendiente"
+            const pendingExpenseIds = new Set();
+            DB.services.filter(srv => srv.status === 'cobro_pendiente').forEach(srv => {
+                if (srv.gastos) srv.gastos.forEach(g => pendingExpenseIds.add(g.id));
+            });
+            
+            if (pendingExpenseIds.size > 0) {
+                DB.finances = DB.finances.filter(fin => !pendingExpenseIds.has(fin.id));
+                pendingExpenseIds.forEach(id => supabaseClient.from('pb_finances').delete().eq('id', id).then());
+            }
+
+        }
+    } catch(e) {
+        console.error('Error general de conexión:', e);
+        alert("Problema de red. Funcionando con base de datos local vacía por defecto.");
+        DB = seedDB();
+    }
+}
+
+async function initializeCloudDB() {
+    await dbUpsert('pb_config', { id: 1, catalogs: DB.catalogs, company: DB.company, stages: DB.stages, settings: DB.settings });
+    if(DB.users.length) await supabaseClient.from('pb_users').upsert(DB.users);
+    if(DB.leads.length) await supabaseClient.from('pb_leads').upsert(DB.leads);
+    if(DB.quotes.length) await supabaseClient.from('pb_quotes').upsert(DB.quotes);
+    if(DB.services.length) await supabaseClient.from('pb_services').upsert(DB.services);
+    if(DB.finances.length) await supabaseClient.from('pb_finances').upsert(DB.finances);
+    if(DB.marketing.length) await supabaseClient.from('pb_marketing').upsert(DB.marketing);
+}
+
+function saveConfig() {
+    dbUpsert('pb_config', { id: 1, catalogs: DB.catalogs, company: DB.company, stages: DB.stages, settings: DB.settings });
+}
+// --- FIN CONFIGURACIÓN SUPABASE ---
+
+function currentUser(){ return DB.users.find(u=>u.id===session?.userId); }
+function isAdmin(){ return currentUser()?.rol==='admin'; }
+function isVentas(){ return currentUser()?.rol==='ventas'; }
+function isTecnico(){ return currentUser()?.rol==='tecnico'; }
+
+async function doLogin(){
+  const e=document.getElementById('li-email').value.trim().toLowerCase();
+  const p=document.getElementById('li-pass').value;
+  if(!e || !p) { appAlert('Ingresa correo y contraseña'); return; }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email: e, password: p });
+  if (error) { appAlert('Credenciales inválidas o error de red: ' + error.message); return; }
+
+  const u = DB.users.find(x => x.email.toLowerCase() === e);
+  if(!u){ appAlert('Autenticado correctamente, pero el usuario no está registrado en el sistema ERP interno.'); return; }
+
+  session={userId:u.id, rol:u.rol}; 
+  sessionStorage.setItem('pb_sess_v11',JSON.stringify(session));
+  showApp();
+}
+
+async function recuperarPassword() {
+    const e = document.getElementById('li-email').value.trim().toLowerCase();
+    if(!e) { appAlert('Por favor, escribe tu correo en el campo superior y presiona este botón de nuevo.'); return; }
+    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(e);
+    if(error) { appAlert('Error al enviar el correo: ' + error.message); } 
+    else { appAlert('Se ha enviado un enlace de recuperación a tu correo electrónico.'); }
+}
+
+async function doLogout(){ 
+    await supabaseClient.auth.signOut(); 
+    sessionStorage.removeItem('pb_sess_v11'); 
+    session=null; 
+    location.reload(); 
+}
+
+function showApp(){
+  document.getElementById('login-view').classList.add('hidden');
+  document.getElementById('app-view').classList.remove('hidden');
+  buildNav();
+  go(isTecnico() ? 'servicios' : 'pipeline');
+}
+
+const NAV=[
+  {id:'pipeline',label:'Pipeline Ventas',icon:'🎯',roles:['admin','ventas']},
+  {id:'dashboard',label:'Dashboard',icon:'📊',roles:['admin']},
+  {id:'clientes',label:'Clientes',icon:'👥',roles:['admin','ventas']},
+  {id:'cotizaciones',label:'Cotizaciones',icon:'📄',roles:['admin','ventas']},
+  {id:'programacion',label:'Programación',icon:'📅',roles:['admin','ventas']},
+  {id:'servicios',label:'Servicios',icon:'🛠️',roles:['admin','ventas','tecnico']},
+  {id:'finanzas',label:'Finanzas',icon:'💰',roles:['admin']},
+  {id:'marketing',label:'Marketing',icon:'📣',roles:['admin']},
+  {id:'prod_ventas',label:'Prod. Ventas',icon:'📈',roles:['admin']},
+  {id:'prod_tecnicos',label:'Prod. Técnicos',icon:'🔧',roles:['admin']},
+  {id:'usuarios',label:'Usuarios',icon:'🔐',roles:['admin']},
+  {id:'config',label:'Configuración',icon:'⚙️',roles:['admin']},
+];
+
+function buildNav(){
+  const u=currentUser();
+  document.getElementById('user-name').textContent=u.nombre;
+  document.getElementById('user-role').textContent=u.rol.toUpperCase();
+  document.getElementById('user-avatar').textContent=u.nombre[0];
+  const nav=document.getElementById('nav'); nav.innerHTML='';
+  NAV.filter(n=>n.roles.includes(u.rol)).forEach(n=>{
+    const it=el(`<div class="nav-item" data-id="${n.id}"><div class="ic">${n.icon}</div><div>${n.label}</div></div>`);
+    it.onclick=()=>go(n.id); nav.appendChild(it);
+  });
+}
+
+function destroyCharts(group) {
+    if(dashCharts[group]) {
+        Object.keys(dashCharts[group]).forEach(k => {
+            if(dashCharts[group][k]) dashCharts[group][k].destroy();
+        });
+        dashCharts[group] = {};
+    }
+}
+
+function go(page){
+  const u=currentUser();
+  const route=NAV.find(x=>x.id===page);
+  if(!route || !route.roles.includes(u.rol)){ appAlert('Acceso denegado'); return; }
+  currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.id===page));
+  
+  const titles={
+    dashboard:['Dashboard','Panel ejecutivo'], pipeline:['Pipeline de Ventas','Gestión dinámica de prospectos'],
+    clientes:['Clientes','Base de datos y Archivados'], cotizaciones:['Cotizaciones','Propuestas'],
+    programacion:['Programación','Calendario general'], servicios:['Servicios','Operación y campo'],
+    finanzas:['Finanzas','Ingresos, gastos y autorizaciones'], marketing:['Marketing Avanzado','ROI y Conversiones'],
+    prod_ventas:['Productividad Ventas','Métricas por Asesor'], prod_tecnicos:['Productividad Técnicos','Métricas Operativas'],
+    usuarios:['Usuarios','Gestión de accesos'], config:['Configuración','Parametrización']
+  };
+  document.getElementById('page-title').textContent=titles[page][0];
+  document.getElementById('page-sub').textContent=titles[page][1];
+  
+  const c=document.getElementById('page-content'); c.innerHTML='';
+  ['dash','mkt','ven','tec'].forEach(g => destroyCharts(g));
+
+  ({dashboard:renderDashboard, pipeline:renderPipeline, clientes:renderClientes, cotizaciones:renderCotizaciones,
+    programacion:renderProgramacion, servicios:renderServicios, finanzas:renderFinanzas, marketing:renderMarketing,
+    prod_ventas:renderProdVentas, prod_tecnicos:renderProdTecnicos,
+    usuarios:renderUsuarios, config:renderConfig})[page](c);
+}
+
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function inPeriod(ts, mes, anio){ 
+  if(!ts)return false; const d=new Date(ts); 
+  if(anio && d.getFullYear()!=anio) return false; 
+  if(mes>=0 && d.getMonth()!=mes) return false; 
+  return true; 
+}
+let debounceTimer;
+function debounce(fn, ms=300){ clearTimeout(debounceTimer); debounceTimer=setTimeout(fn, ms); }
+
+function openQuickLeadModal(){
+  showModal(`
+    <h3 class="text-lg font-extrabold mb-1" style="color:var(--pb-navy)">⚡ Lead Rápido</h3>
+    <p class="text-xs text-slate-500 mb-4">Registro express</p>
+    <div class="space-y-3">
+      <div><label class="label">Nombre *</label><input id="ql-nombre" class="input" autofocus/></div>
+      <div><label class="label">Teléfono *</label><input id="ql-tel" class="input"/></div>
+      <div><label class="label">Delegación / Municipio *</label><select id="ql-muni" class="select">${buildMuniOptions()}</select></div>
+      <div class="flex gap-3">
+        <div class="flex-1"><label class="label">Servicio</label><select id="ql-tipo" class="select">${DB.catalogs.tiposCliente.map(t=>`<option>${t}</option>`).join('')}</select></div>
+        <div class="flex-1"><label class="label">Asesor</label><select id="ql-asesor" class="select">${DB.users.filter(u=>u.rol==='ventas'||u.rol==='admin').map(u=>`<option value="${u.id}" ${u.id===session.userId?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
+      </div>
+      <div class="flex gap-3 mt-3">
+        <div class="flex-1"><label class="label">Campaña (MKT)</label><select id="ql-campana" class="select"><option value="">Sin campaña / Orgánico</option>${DB.marketing.map(m=>`<option value="${m.id}">${m.nombre||'Campaña sin nombre'} (${m.canal})</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5 justify-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-green" onclick="saveQuickLead()">Crear Lead</button>
+    </div>`);
+}
+function saveQuickLead(){
+  const n=document.getElementById('ql-nombre').value.trim(); const t=document.getElementById('ql-tel').value.trim();
+  if(!n||!t){ appAlert('Nombre y teléfono requeridos'); return; }
+  const newLead = {id:uid('L'), nombre:n, tel:t, email:'', tipo:document.getElementById('ql-tipo').value, asesorId:document.getElementById('ql-asesor').value, campanaId:document.getElementById('ql-campana').value, plaga:DB.catalogs.plagas[0], municipio:document.getElementById('ql-muni').value, calle:'', calificacion:'Bueno', score:80, canal:DB.catalogs.canalesMkt[0], stageId:DB.stages.find(s=>s.order===1).id, status:'activo', createdAt:Date.now()};
+  DB.leads.push(newLead);
+  dbUpsert('pb_leads', newLead);
+  closeModal();
+  if(currentPage==='pipeline') renderPipeGrid();
+  if(currentPage==='clientes') renderCliTable();
+}
+
+function openLeadModal(id){
+  const l=id?DB.leads.find(x=>x.id===id):{nombre:'',tel:'',email:'',tipo:'Hogar',plaga:DB.catalogs.plagas[0],municipio:CDMX[0],calle:'',calificacion:'Bueno',score:80,stageId:DB.stages[0].id, canal:DB.catalogs.canalesMkt[0], asesorId:session.userId, campanaId:''};
+  showModal(`
+    <h3 class="text-lg font-extrabold mb-4" style="color:var(--pb-navy)">${id?'✏️ Editar Cliente':'📋 Registrar Cliente'}</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="col-span-2"><label class="label">Nombre *</label><input id="f-nombre" class="input" value="${l.nombre}"/></div>
+      <div><label class="label">Teléfono *</label><input id="f-tel" class="input" value="${l.tel}"/></div>
+      <div><label class="label">Email</label><input id="f-email" class="input" value="${l.email||''}"/></div>
+      <div><label class="label">Tipo</label><select id="f-tipo" class="select">${DB.catalogs.tiposCliente.map(t=>`<option ${l.tipo===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div><label class="label">Plaga</label><select id="f-plaga" class="select">${DB.catalogs.plagas.map(p=>`<option ${l.plaga===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      <div><label class="label">Canal Origen</label><select id="f-canal" class="select">${DB.catalogs.canalesMkt.map(c=>`<option ${l.canal===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label class="label">Campaña (MKT)</label><select id="f-campana" class="select"><option value="">Sin campaña / Orgánico</option>${DB.marketing.map(m=>`<option value="${m.id}" ${l.campanaId===m.id?'selected':''}>${m.nombre||'Campaña sin nombre'} (${m.canal})</option>`).join('')}</select></div>
+      <div><label class="label">Asesor</label><select id="f-asesor" class="select">${DB.users.filter(u=>u.rol==='ventas'||u.rol==='admin').map(u=>`<option value="${u.id}" ${l.asesorId===u.id?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
+      <div><label class="label">Municipio</label><select id="f-muni" class="select">${buildMuniOptions(l.municipio)}</select></div>
+      <div><label class="label">Etapa Pipeline</label><select id="f-stage" class="select">${DB.stages.map(s=>`<option value="${s.id}" ${l.stageId===s.id?'selected':''}>${s.name}</option>`).join('')}</select></div>
+      <div class="col-span-2"><label class="label">Dirección Completa</label><input id="f-calle" class="input" value="${l.calle||''}"/></div>
+    </div>
+    <div class="flex gap-2 mt-5 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveLead('${id||''}')">Guardar</button></div>`);
+}
+function saveLead(id){
+  const n=document.getElementById('f-nombre').value.trim(), t=document.getElementById('f-tel').value.trim();
+  if(!n||!t){appAlert('Nombre y teléfono son requeridos');return;}
+  const data={nombre:n,tel:t,email:document.getElementById('f-email').value,tipo:document.getElementById('f-tipo').value,plaga:document.getElementById('f-plaga').value, canal:document.getElementById('f-canal').value, campanaId:document.getElementById('f-campana').value, asesorId:document.getElementById('f-asesor').value, municipio:document.getElementById('f-muni').value,calle:document.getElementById('f-calle').value,stageId:document.getElementById('f-stage').value};
+  if(id){ 
+      const item = DB.leads.find(x=>x.id===id);
+      Object.assign(item, data); 
+      dbUpsert('pb_leads', item);
+  } else { 
+      const nL = {id:uid('L'),...data, calificacion:'Bueno', score:80, status:'activo', createdAt:Date.now()};
+      DB.leads.push(nL); 
+      dbUpsert('pb_leads', nL);
+  }
+  closeModal();
+  if(currentPage==='pipeline')renderPipeGrid();
+  if(currentPage==='clientes')renderCliTable();
+}
+
+function renderPipeline(c){
+  c.innerHTML=`
+  <div class="card p-5 mb-4 flex items-center justify-between flex-wrap gap-3">
+    <div><div class="text-xs text-slate-500">Prospectos Activos</div><div class="text-3xl font-extrabold" style="color:var(--pb-navy)">${DB.leads.filter(l=>l.status==='activo').length}</div></div>
+    <div class="text-xs text-slate-600 max-w-xl">Arrastra libremente las tarjetas a la etapa deseada. Los pasos <b>En Servicio</b> y <b>Terminado</b> se avanzan manualmente al arrastrar.</div>
+    <button class="btn btn-green" onclick="openQuickLeadModal()">+ Lead Rápido</button>
+  </div>
+  <div id="pipe-grid" class="pipe-grid"></div>`;
+  renderPipeGrid();
+}
+
+function renderPipeGrid(){
+  document.getElementById('pipe-grid').innerHTML=DB.stages.sort((a,b)=>a.order-b.order).map(s=>{
+    const leads=DB.leads.filter(l=>l.stageId===s.id&&l.status==='activo');
+    return `<div class="stage-card" ondragover="event.preventDefault()" ondrop="dropLead(event,'${s.id}')">
+      <div class="stage-head sticky top-0 z-10" style="background:linear-gradient(135deg,${s.color},${s.color}cc)">
+        <div class="flex items-center gap-2"><span class="stage-icon-big">${s.icon}</span><span>${s.name}</span></div>
+        <span class="chip" style="background:rgba(255,255,255,.25);color:#fff">${leads.length}</span>
+      </div>
+      <div class="stage-body">
+        ${leads.length?leads.map(l=>`
+          <div class="lead-card" draggable="true" ondragstart="event.dataTransfer.setData('lead_id','${l.id}'); event.target.classList.add('dragging')" ondragend="event.target.classList.remove('dragging')">
+            <div class="flex justify-between items-start mb-1"><div class="font-bold text-sm" style="color:var(--pb-navy)">${l.nombre}</div><span class="chip chip-teal">${l.plaga}</span></div>
+            <div class="text-xs text-slate-500 mb-2">📞 ${l.tel} <br>📍 ${l.municipio}</div>
+            <div class="flex justify-between pt-2 border-t border-slate-100 items-center">
+              <button class="text-xs font-semibold text-blue-600" onclick="openLeadModal('${l.id}')">Editar</button>
+              ${s.id === DB.settings.stageWonId ? `<button class="btn btn-ghost py-0 px-2 text-xs font-bold text-slate-500" onclick="archivarLead('${l.id}')">📦 Archivar</button>` : `<button class="text-xs font-semibold text-red-500" onclick="discardLead('${l.id}')">Descartar</button>`}
+            </div>
+          </div>`).join(''):'<div class="text-center text-xs text-slate-400 py-6 border-2 border-dashed border-slate-200 rounded-xl">Vacío</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+function dropLead(e, destStageId){
+  const id=e.dataTransfer.getData('lead_id'); if(!id)return;
+  const l=DB.leads.find(x=>x.id===id); const cur=DB.stages.find(x=>x.id===l.stageId); const dest=DB.stages.find(x=>x.id===destStageId);
+  
+  if(dest.order < cur.order){ appAlert('No se recomienda retroceder de etapa. Edita el registro si es un caso especial.'); return; }
+  
+  l.stageId=destStageId;
+  dbUpsert('pb_leads', l);
+
+  // Regla 2: Generación automática de borrador al entrar a Cotización
+  if(destStageId===DB.settings.stageQuoteId && !DB.quotes.find(q=>q.leadId===l.id)){
+    const newQ = {
+        id:uid('Q'), leadId:l.id, fecha:Date.now(), visitas:1, costoVisita:0, total:0, status:'borrador', asesorId:session.userId,
+        visitas_detalle: [{id:uid('vd'), concepto: 'Visita Inicial', monto: 0}]
+    };
+    DB.quotes.push(newQ);
+    dbUpsert('pb_quotes', newQ);
+    appAlert('Se generó Cotización Borrador para '+l.nombre, 'Automatización');
+  }
+  renderPipeGrid();
+}
+
+function discardLead(id) {
+    const opts = DB.catalogs.motivosDescarte.map(m => `<option value="${m}">${m}</option>`).join('');
+    showModal(`
+        <h3 class="text-lg font-bold mb-3 text-navy">Descartar Lead</h3>
+        <p class="mb-3 text-slate-600 text-sm">Selecciona el motivo por el cual se descarta el lead:</p>
+        <select id="discard-motive" class="select mb-5">${opts}</select>
+        <div class="text-right flex gap-2 justify-end">
+            <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-danger" onclick="confirmDiscardLead('${id}')">Descartar Lead</button>
+        </div>
+    `);
+}
+function confirmDiscardLead(id) {
+    const m = document.getElementById('discard-motive').value;
+    const l = DB.leads.find(x=>x.id===id);
+    l.status = 'descartado'; l.motivoDescarte = m; l.descartedAt = Date.now();
+    dbUpsert('pb_leads', l);
+    closeModal();
+    if(currentPage==='pipeline') renderPipeGrid();
+    if(currentPage==='clientes') renderCliTable();
+}
+
+function archivarLead(id){
+    const l=DB.leads.find(x=>x.id===id);
+    l.status = 'archivado'; l.archivedAt = Date.now(); l.archivedBy = session.userId;
+    dbUpsert('pb_leads', l);
+    renderPipeGrid();
+}
+
+let cliTab='activo';
+function renderClientes(c){
+  c.innerHTML=`
+  <div class="card p-5">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+      <div class="flex gap-2">
+        ${['activo','archivado','descartado'].map(t=>`<button class="tab ${cliTab===t?'active':''}" onclick="cliTab='${t}';renderCliTable()">${t.toUpperCase()} (${DB.leads.filter(l=>l.status===t).length})</button>`).join('')}
+      </div>
+      <div class="flex gap-2">
+        <input id="cli-search" class="input" placeholder="🔍 Buscar nombre/tel" style="width:280px" oninput="debounce(renderCliTable)"/>
+        <button class="btn btn-navy" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+    </div>
+    <div id="cli-table"></div>
+  </div>`;
+  renderCliTable();
+}
+function renderCliTable(){
+  if(currentPage!=='clientes')return;
+  const q=(document.getElementById('cli-search')?.value||'').toLowerCase();
+  const rows=DB.leads.filter(l=>l.status===cliTab && (!q||l.nombre.toLowerCase().includes(q)||l.tel.includes(q)));
+  document.getElementById('cli-table').innerHTML=`<div class="overflow-x-auto"><table>
+    <thead><tr><th>Cliente / ID</th><th>Contacto</th><th>Municipio</th><th>Tipo/Origen</th><th>Servicio</th><th>${cliTab==='archivado'?'Archivado El':(cliTab==='descartado'?'Motivo':'Etapa')}</th><th></th></tr></thead>
+    <tbody>${rows.length?rows.map(l=>`<tr>
+      <td><div class="font-bold text-navy">${l.nombre}</div><div class="text-xs text-slate-400">${l.id}</div></td>
+      <td><div class="text-sm">${l.tel}</div><div class="text-xs text-slate-500">${l.email||'—'}</div></td>
+      <td>${l.municipio}</td>
+      <td><div class="text-sm">${l.tipo}</div><span class="chip chip-amber">${l.canal||'—'}</span></td>
+      <td><span class="chip chip-teal">${l.plaga}</span></td>
+      <td><span class="chip chip-navy">${cliTab==='archivado' ? fmtDate(l.archivedAt) : (cliTab==='descartado' ? l.motivoDescarte||'—' : DB.stages.find(s=>s.id===l.stageId)?.name||'—')}</span></td>
+      <td>
+        <div class="flex gap-1">
+            <button class="btn btn-outline py-1 px-3 text-xs" onclick="openLeadModal('${l.id}')">Editar</button>
+            ${cliTab==='archivado' || cliTab==='descartado' ? `<button class="btn btn-primary py-1 px-3 text-xs" onclick="reactivarLead('${l.id}')">Reactivar</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join(''):'<tr><td colspan="7" class="text-center text-slate-400 py-8">Sin registros</td></tr>'}</tbody>
+  </table></div>`;
+}
+function reactivarLead(id){
+    const l=DB.leads.find(x=>x.id===id);
+    l.status = 'activo'; l.stageId = DB.stages.find(s=>s.order===1).id; delete l.archivedAt; delete l.archivedBy; delete l.descartedAt;
+    dbUpsert('pb_leads', l);
+    renderCliTable();
+}
+
+let cotP={mes:new Date().getMonth(), anio:new Date().getFullYear()};
+function renderCotizaciones(c){
+  c.innerHTML=`
+  <div class="flex justify-end items-center mb-4 gap-2">
+    <select class="select w-auto" id="cot-mes">${MESES.map((m,i)=>`<option value="${i}" ${i===cotP.mes?'selected':''}>${m}</option>`).join('')}<option value="-1">Todos</option></select>
+    <select class="select w-auto" id="cot-anio">${[2024,2025,2026].map(y=>`<option ${y===cotP.anio?'selected':''}>${y}</option>`).join('')}</select>
+  </div>
+  <div class="card p-5"><div id="cot-content"></div></div>`;
+  document.getElementById('cot-mes').onchange=e=>{cotP.mes=+e.target.value;renderCotTable()};
+  document.getElementById('cot-anio').onchange=e=>{cotP.anio=+e.target.value;renderCotTable()};
+  renderCotTable();
+}
+function renderCotTable(){
+  const list=DB.quotes.filter(q=>cotP.mes<0||inPeriod(q.fecha,cotP.mes,cotP.anio));
+  document.getElementById('cot-content').innerHTML=`
+    <div class="overflow-x-auto"><table>
+      <thead><tr><th>Folio/Fecha</th><th>Cliente</th><th>Visitas a Programar</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>${list.length?list.sort((a,b)=>b.fecha-a.fecha).map(q=>{
+        const l=DB.leads.find(x=>x.id===q.leadId);
+        const stClass={borrador:'chip-amber',enviada:'chip-blue',aceptada:'chip-green',rechazada:'chip-red'}[q.status];
+        const numVisitas = q.visitas_detalle ? q.visitas_detalle.length : q.visitas;
+        return `<tr>
+          <td><div class="font-bold">${q.id}</div><div class="text-xs text-slate-500">${fmtDate(q.fecha)}</div></td>
+          <td>${l?.nombre||'—'}</td><td>${numVisitas} visita(s)</td>
+          <td class="font-bold text-green-700">${fmt$(q.total)}</td>
+          <td><span class="chip ${stClass}">${q.status.toUpperCase()}</span></td>
+          <td><div class="flex flex-wrap gap-1">
+            ${['borrador','enviada'].includes(q.status)?`<button class="btn btn-outline py-1 text-xs" onclick="editQuote('${q.id}')">Editar</button>`:''}
+            <button class="btn btn-navy py-1 text-xs" onclick="downloadQuotePDF('${q.id}')">📄 PDF</button>
+            ${q.status==='borrador'?`<button class="btn btn-primary py-1 text-xs" onclick="changeQStatus('${q.id}','enviada')">✓ Enviada</button>`:''}
+            ${q.status==='enviada'?`<button class="btn btn-green py-1 text-xs" onclick="changeQStatus('${q.id}','aceptada')">Aceptar</button> <button class="btn btn-danger py-1 text-xs" onclick="changeQStatus('${q.id}','rechazada')">Rechazar</button>`:''}
+            ${['borrador','enviada','rechazada'].includes(q.status)?`<button class="btn btn-outline py-1 text-xs text-red-500" onclick="delQuote('${q.id}')">✕</button>`:''}
+          </div></td>
+        </tr>`;
+      }).join(''):'<tr><td colspan="6" class="text-center text-slate-400 py-8">Sin cotizaciones</td></tr>'}</tbody>
+    </table></div>`;
+}
+
+function delQuote(id){
+    if(confirm('¿Seguro que deseas eliminar esta cotización?')){
+        DB.quotes = DB.quotes.filter(x=>x.id!==id);
+        dbDelete('pb_quotes', id);
+        renderCotTable();
+    }
+}
+
+function editQuote(id){
+  const q = DB.quotes.find(x=>x.id===id);
+  window._tmpQuote = JSON.parse(JSON.stringify(q));
+  
+  if(!window._tmpQuote.visitas_detalle) {
+      window._tmpQuote.visitas_detalle = Array.from({length: window._tmpQuote.visitas || 1}).map((_, i) => ({
+          id: uid('vd'), concepto: 'Visita ' + (i+1), monto: window._tmpQuote.costoVisita || 0
+      }));
+  }
+
+  showModal(`
+    <h3 class="text-lg font-extrabold mb-4 text-navy">Cotización ${q.id}</h3>
+    <div class="mb-5">
+      <label class="label">Agregar Nueva Visita / Servicio</label>
+      <div class="flex gap-2">
+        <input id="q-new-c" class="input py-2 text-sm w-full" placeholder="Concepto (ej. Visita Refuerzo)"/>
+        <input id="q-new-m" type="number" class="input py-2 text-sm w-32" placeholder="$ Monto"/>
+        <button class="btn btn-navy py-2 px-4 text-xs" onclick="addQuoteVisita()">Añadir</button>
+      </div>
+    </div>
+    
+    <label class="label">Detalle de Visitas a Programar</label>
+    <div id="q-visitas-list" class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2"></div>
+    
+    <div class="text-right font-black text-xl text-green-700 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+        Total Cotización: <span id="q-total-lbl">${fmt$(window._tmpQuote.total)}</span>
+    </div>
+    <div class="flex gap-2 justify-end">
+        <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-green" onclick="saveQuote('${id}')">Guardar</button>
+    </div>`);
+  renderQuoteVisitas();
+}
+
+function renderQuoteVisitas() {
+    let t = 0;
+    document.getElementById('q-visitas-list').innerHTML = window._tmpQuote.visitas_detalle.length ? window._tmpQuote.visitas_detalle.map((v,i) => {
+        t += Number(v.monto);
+        return `<div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 text-sm shadow-sm">
+            <span class="font-medium text-navy">${v.concepto}</span>
+            <span class="font-bold text-slate-700">${fmt$(v.monto)} <button class="text-red-500 hover:bg-red-50 rounded px-2 ml-2 transition-colors" onclick="delQuoteVisita(${i})">✕ Eliminar</button></span>
+        </div>`;
+    }).join('') : '<div class="text-xs text-slate-400 py-4 text-center">No hay visitas. Agrega una arriba.</div>';
+    
+    window._tmpQuote.total = t;
+    document.getElementById('q-total-lbl').textContent = fmt$(t);
+}
+
+function addQuoteVisita() {
+    const c = document.getElementById('q-new-c').value.trim();
+    const m = +document.getElementById('q-new-m').value;
+    if(!c) return appAlert('Ingresa un concepto descriptivo para la visita.');
+    window._tmpQuote.visitas_detalle.push({id: uid('vd'), concepto: c, monto: m});
+    renderQuoteVisitas();
+    document.getElementById('q-new-c').value = '';
+    document.getElementById('q-new-m').value = '';
+}
+
+function delQuoteVisita(i) {
+    window._tmpQuote.visitas_detalle.splice(i, 1);
+    renderQuoteVisitas();
+}
+
+function saveQuote(id){
+  const q = DB.quotes.find(x=>x.id===id); 
+  q.visitas_detalle = window._tmpQuote.visitas_detalle;
+  q.total = window._tmpQuote.total;
+  q.visitas = q.visitas_detalle.length; // para compatibilidad antigua
+  dbUpsert('pb_quotes', q); 
+  closeModal(); renderCotTable();
+}
+
+async function changeQStatus(id,st){
+  const q=DB.quotes.find(x=>x.id===id); q.status=st;
+  dbUpsert('pb_quotes', q);
+
+  if(st==='aceptada'){
+    const l=DB.leads.find(x=>x.id===q.leadId);
+    let newServs = [];
+    
+    const det = q.visitas_detalle || Array.from({length: q.visitas||1}).map((_,i)=>({concepto:'Visita '+(i+1), monto: q.costoVisita||0}));
+    
+    det.forEach((v, i) => {
+        const ns = {
+            id: uid('S'), folio: 'V'+Date.now().toString().slice(-6)+(i+1), leadId: q.leadId, quoteId: q.id, 
+            plaga: l?.plaga, monto: v.monto, notes: v.concepto, tipo: 'normal', status: 'creado', 
+            fecha: null, tecnicoId: null, gastos: []
+        };
+        DB.services.push(ns); 
+        newServs.push(ns);
+    });
+
+    if(newServs.length) await supabaseClient.from('pb_services').upsert(newServs);
+    
+    if(l) { 
+        const s4 = DB.stages.find(s=>s.order===3);
+        if(s4) l.stageId = s4.id; 
+        dbUpsert('pb_leads', l); 
+    }
+    appAlert(`Cotización Aceptada. Se han programado ${det.length} servicios en estado pendiente.`);
+  }
+  
+  if(st==='rechazada'){
+    const l=DB.leads.find(x=>x.id===q.leadId);
+    if(l){ l.status='descartado'; l.motivoDescarte='Cotización rechazada'; l.descartedAt=Date.now(); dbUpsert('pb_leads', l); appAlert('Cotización rechazada. Cliente movido a Descartados.'); }
+  }
+  renderCotTable();
+}
+
+function downloadQuotePDF(id){
+  const q=DB.quotes.find(x=>x.id===id); const l=DB.leads.find(x=>x.id===q.leadId); const u=DB.users.find(x=>x.id===q.asesorId); const co=DB.company;
+  const {jsPDF}=window.jspdf; const doc=new jsPDF();
+  
+  const colorNavy = [8, 26, 61];
+  const colorGreen = [120, 193, 59];
+
+  doc.setFillColor(...colorNavy); doc.rect(0,0,210,35,'F'); 
+  doc.setFillColor(...colorGreen); doc.rect(0,35,210,3,'F');
+  
+  doc.setTextColor(255,255,255); doc.setFontSize(28); doc.setFont('helvetica','bold'); 
+  doc.text('PLAGUI',15,22);
+  doc.setTextColor(...colorGreen); 
+  doc.text('BIO',56,22); 
+
+  doc.setFontSize(10); doc.setTextColor(200,200,200); doc.setFont('helvetica','normal'); 
+  doc.text('Soluciones Especializadas en Control de Plagas', 15, 29);
+  
+  doc.setTextColor(255,255,255); doc.setFontSize(9); 
+  doc.text(co.tel+'  |  '+co.email+'  |  '+co.web, 195, 22, {align:'right'}); 
+  doc.text(co.direccion, 195, 29, {align:'right'});
+
+  doc.setTextColor(...colorNavy); doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.text('COTIZACIÓN COMERCIAL',195,50,{align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80,80,80);
+  doc.text('Folio: '+q.id, 195, 57, {align:'right'}); doc.text('Fecha Emisión: '+fmtDate(q.fecha), 195, 63, {align:'right'}); doc.text('Vigencia: 7 días', 195, 69, {align:'right'});
+
+  doc.setFillColor(244,247,251); doc.rect(15, 45, 100, 35, 'F');
+  doc.setTextColor(...colorNavy); doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text('Datos del Cliente', 20, 52);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(40,40,40);
+  doc.text(l?.nombre||'—', 20, 59); doc.text('Tel: '+(l?.tel||'—'), 20, 65); doc.text(l?.email||'Sin correo', 20, 71); doc.text(l?.municipio||'', 20, 77);
+
+  const det = q.visitas_detalle || Array.from({length: q.visitas||1}).map((_,i)=>({concepto:'Visita '+(i+1), monto: q.costoVisita||0}));
+  const bodyRows = det.map(v => [`Manejo Integrado de ${l?.plaga||'Plagas'}\n(${v.concepto})`, '1', fmt$(v.monto), fmt$(v.monto)]);
+
+  doc.autoTable({
+      startY: 95, head: [['Concepto / Detalle', 'Cantidad', 'Costo Unitario', 'Importe']],
+      body: bodyRows, 
+      headStyles: {fillColor: colorNavy, textColor: 255, fontStyle: 'bold', fontSize: 11},
+      bodyStyles: {fontSize: 10, textColor: 50}, alternateRowStyles: {fillColor: [250,250,250]}, theme: 'grid', margin: {top: 10}
+  });
+
+  const finalY = doc.lastAutoTable.finalY;
+  doc.setFillColor(...colorNavy); doc.rect(130, finalY+10, 65, 12, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont('helvetica','bold');
+  doc.text('TOTAL: '+fmt$(q.total), 190, finalY+18, {align:'right'});
+
+  doc.setTextColor(...colorNavy); doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('Condiciones del Servicio', 15, 250);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,100);
+  doc.text('1. El pago deberá realizarse contra entrega o previo al servicio según lo acordado.', 15, 255);
+  doc.text('2. Las garantías aplican únicamente siguiendo las recomendaciones del técnico.', 15, 259);
+  doc.text('3. Favor de confirmar su cita con 24 horas de anticipación.', 15, 263);
+  doc.text('Atendido por: ' + (u?.nombre || 'Ventas'), 15, 275);
+  
+  doc.save(`Cotizacion_${q.id}.pdf`);
+}
+
+let progMes=new Date().getMonth(), progAnio=new Date().getFullYear(), progTec='';
+function renderProgramacion(c){
+  c.innerHTML=`
+  <div class="card p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <select class="select w-auto" id="pg-mes">${MESES.map((m,i)=>`<option value="${i}" ${i===progMes?'selected':''}>${m}</option>`).join('')}</select>
+    <select class="select w-auto" id="pg-anio">${[2024,2025,2026].map(y=>`<option ${y===progAnio?'selected':''}>${y}</option>`).join('')}</select>
+    <select class="select w-auto" id="pg-tec"><option value="">Todos los técnicos</option>${DB.users.filter(u=>u.rol==='tecnico').map(u=>`<option value="${u.id}" ${progTec===u.id?'selected':''}>${u.nombre}</option>`).join('')}</select>
+    <div class="ml-auto text-xs text-slate-500">🟦 Normal · 🟩 Garantía · 🟪 Cortesía <br> <i>Arrastra citas para reagendar</i></div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
+    <div class="card p-4 flex flex-col"><div class="font-bold mb-3 text-navy">📌 Por Asignar Fecha</div><div id="pend-list" class="flex-1 overflow-y-auto space-y-2"></div></div>
+    <div class="card p-4"><div id="cal-grid-wrap"></div></div>
+  </div>`;
+  ['pg-mes','pg-anio','pg-tec'].forEach(id=>document.getElementById(id).onchange=e=>{
+    if(id==='pg-mes')progMes=+e.target.value; if(id==='pg-anio')progAnio=+e.target.value; if(id==='pg-tec')progTec=e.target.value;
+    renderProgramacion(document.getElementById('page-content'));
+  });
+  renderPendList(); renderCalendar();
+}
+function renderPendList(){
+  const pend=DB.services.filter(s=>!s.fecha && s.status!=='cancelado' && (!progTec||s.tecnicoId===progTec));
+  document.getElementById('pend-list').innerHTML=pend.length?pend.map(s=>`
+    <div class="p-3 rounded-xl border border-slate-200 bg-slate-50" draggable="${!isTecnico()}" ondragstart="event.dataTransfer.setData('srv_id','${s.id}')">
+      <div class="font-bold text-sm text-navy">${DB.leads.find(x=>x.id===s.leadId)?.nombre||'—'}</div>
+      <div class="text-xs text-slate-500">${s.folio} · ${s.plaga||'—'} · ${fmt$(s.monto)}</div>
+      <button class="btn btn-outline w-full mt-2 py-1 text-xs" onclick="openSrvModal('${s.id}')">Asignar Manual</button>
+    </div>`).join(''):'<div class="text-xs text-slate-400 text-center py-6">Todo programado</div>';
+}
+function renderCalendar(){
+  const startDow=new Date(progAnio,progMes,1).getDay(), ndays=new Date(progAnio,progMes+1,0).getDate();
+  let html=`<div class="cal-grid mb-2">${['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'].map(d=>`<div class="text-xs font-bold text-center text-slate-500">${d}</div>`).join('')}</div><div class="cal-grid">`;
+  for(let i=0;i<startDow;i++) html+='<div class="cal-cell" style="background:#f8fafc"></div>';
+  for(let d=1;d<=ndays;d++){
+    const dTime=new Date(progAnio,progMes,d).getTime();
+    let evts=DB.services.filter(s=>s.fecha && new Date(s.fecha).toDateString()===new Date(dTime).toDateString());
+    if(progTec) evts=evts.filter(s=>s.tecnicoId===progTec);
+    
+    html+=`<div class="cal-cell" ${!isTecnico() ? `ondragover="event.preventDefault(); this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="this.classList.remove('drag-over'); dropCal(event, ${dTime})"` : ''}>
+      <span class="d">${d}</span>${evts.map(e=>`
+      <span class="cal-evt ${e.status==='cancelado'?'cancelado':e.tipo}" draggable="${!isTecnico()}" ondragstart="event.dataTransfer.setData('srv_id','${e.id}')" onclick="openSrvModal('${e.id}')">
+        ${new Date(e.fecha).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} ${DB.leads.find(x=>x.id===e.leadId)?.nombre.slice(0,10)||''}
+      </span>`).join('')}</div>`;
+  }
+  document.getElementById('cal-grid-wrap').innerHTML=html+'</div>';
+}
+function dropCal(e, targetTime){
+  const id=e.dataTransfer.getData('srv_id'); if(!id)return;
+  const s=DB.services.find(x=>x.id===id);
+  const oldDate=s.fecha;
+  const d=new Date(targetTime); 
+  if(oldDate){ const od=new Date(oldDate); d.setHours(od.getHours(), od.getMinutes()); } 
+  else { d.setHours(9,0); } 
+  
+  if(oldDate) {
+    if(!s.reagendamientos) s.reagendamientos=[];
+    s.reagendamientos.push({de:oldDate, a:d.getTime(), motivo:'Drag & Drop', user:session.userId, ts:Date.now()});
+  }
+  s.fecha=d.getTime(); 
+  dbUpsert('pb_services', s);
+  renderProgramacion(document.getElementById('page-content'));
+}
+
+let srvFilter={tec:'', mes:new Date().getMonth(), anio:new Date().getFullYear()};
+function renderServicios(c){
+  c.innerHTML=`
+  <div class="card p-4 mb-4 flex flex-wrap gap-3 items-center">
+    ${!isTecnico()?`<select class="select w-auto" id="sf-tec"><option value="">Todos los técnicos</option>${DB.users.filter(u=>u.rol==='tecnico').map(u=>`<option value="${u.id}">${u.nombre}</option>`).join('')}</select>`:''}
+    <select class="select w-auto" id="sf-mes">${MESES.map((m,i)=>`<option value="${i}" ${i===srvFilter.mes?'selected':''}>${m}</option>`).join('')}<option value="-1">Todos</option></select>
+    <select class="select w-auto" id="sf-anio">${[2024,2025,2026].map(y=>`<option ${y===srvFilter.anio?'selected':''}>${y}</option>`).join('')}</select>
+  </div>
+  <div id="srv-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>`;
+  if(!isTecnico()) document.getElementById('sf-tec').onchange=e=>{srvFilter.tec=e.target.value;renderSrvGrid()};
+  document.getElementById('sf-mes').onchange=e=>{srvFilter.mes=+e.target.value;renderSrvGrid()};
+  document.getElementById('sf-anio').onchange=e=>{srvFilter.anio=+e.target.value;renderSrvGrid()};
+  renderSrvGrid();
+}
+function renderSrvGrid(){
+  if(currentPage!=='servicios')return;
+  let list=DB.services.filter(s=>srvFilter.mes<0 || inPeriod(s.fecha||Date.now(), srvFilter.mes, srvFilter.anio));
+  if(isTecnico()) list=list.filter(s=>s.tecnicoId===session.userId);
+  else if(srvFilter.tec) list=list.filter(s=>s.tecnicoId===srvFilter.tec);
+  
+  document.getElementById('srv-grid').innerHTML=list.length?list.sort((a,b)=>(b.fecha||0)-(a.fecha||0)).map(s=>{
+    const l=DB.leads.find(x=>x.id===s.leadId);
+    const stCls={creado:'chip-navy',iniciado:'chip-amber',terminado:'chip-blue',cobro_pendiente:'chip-orange',finalizado:'chip-green',cancelado:'chip-red'}[s.status]||'chip-navy';
+    const statusName=s.status==='cobro_pendiente'?'Pend. Auth':s.status.toUpperCase();
+    return `<div class="card p-4 relative flex flex-col">
+      <div class="flex justify-between mb-2"><span class="chip chip-navy">${s.folio}</span><span class="chip ${stCls}">${statusName}</span></div>
+      <div class="font-bold text-navy mb-1" onclick="openSrvModal('${s.id}')" style="cursor:pointer">${l?.nombre||'—'}</div>
+      <div class="text-xs text-slate-500 mb-3 flex-1">📍 ${l?.municipio||'—'} <br> 🐜 ${s.plaga||'—'} <br> 📅 ${fmtDateTime(s.fecha)}</div>
+      
+      <div class="flex gap-1 mt-auto border-t border-slate-100 pt-2">
+           <button class="btn btn-outline srv-action-btn" onclick="openSrvModal('${s.id}')">⚙️ Ver</button>
+           ${!s.checkin && s.status!=='cancelado' ? `<button class="btn btn-primary srv-action-btn" onclick="srvAction('${s.id}','checkin')">▶ In</button>` : ''}
+           ${s.checkin && !s.checkout && s.status!=='cancelado' ? `<button class="btn btn-navy srv-action-btn" onclick="srvAction('${s.id}','checkout')">⏹ Out</button>` : ''}
+           ${s.status==='terminado' ? `<button class="btn btn-green srv-action-btn" onclick="openQuickCobro('${s.id}')">💰 Cobrar</button>` : ''}
+           <button class="btn btn-ghost srv-action-btn" onclick="document.getElementById('ev-up-${s.id}').click()">📷 Foto</button>
+           <input type="file" id="ev-up-${s.id}" class="hidden" onchange="uploadEv('${s.id}', this)" multiple accept="image/*">
+      </div>
+    </div>`;
+  }).join(''):'<div class="col-span-3 text-center py-10 text-slate-400">Sin servicios en este periodo</div>';
+}
+
+function openQuickCobro(id){
+    window._tmpSrvId = id;
+    showModal(`
+      <h3 class="text-lg font-bold text-navy mb-3">Confirmación de Pago y Gastos</h3>
+      
+      <div class="bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
+         <h4 class="font-bold text-sm text-red-900 mb-2">Gastos Operativos (Opcional)</h4>
+         <p class="text-xs text-red-700 mb-3">Si tuviste gastos durante este servicio, regístralos aquí para que se liguen a finanzas.</p>
+         <div id="qc-gastos-list" class="mb-2 space-y-1"></div>
+         <div class="flex gap-2">
+            <select id="qc-g-c" class="select py-1 px-2 text-xs w-1/2">
+                <option value="">Seleccionar Categoría...</option>
+                ${DB.catalogs.categoriasGasto.map(c=>`<option value="${c}">${c}</option>`).join('')}
+            </select>
+            <input id="qc-g-m" type="number" class="input py-1 px-2 text-xs w-24" placeholder="$ Monto"/>
+            <button class="btn btn-danger py-1 px-2 text-xs" onclick="addQCGasto()">Añadir</button>
+         </div>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-sm text-navy mb-2">Detalle de Cobro</h4>
+          <div class="space-y-3">
+            <div><label class="label">Monto a Cobrar (MXN)</label><input id="qc-m" type="number" class="input" value="${DB.services.find(s=>s.id===id).monto}"/></div>
+            <div><label class="label">Método de Pago</label><select id="qc-met" class="select">${DB.catalogs.metodosPago.map(m=>`<option>${m}</option>`).join('')}</select></div>
+          </div>
+      </div>
+      <div class="mt-5 flex gap-2 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="srvAction('${id}','cobrar_rapido')">Registrar Cobro y Enviar</button></div>
+    `);
+    renderQCGastos();
+}
+
+function renderQCGastos() {
+    const s = DB.services.find(x=>x.id===window._tmpSrvId);
+    if(!s.gastos) s.gastos = [];
+    document.getElementById('qc-gastos-list').innerHTML = s.gastos.map((g,i) => `<div class="flex justify-between text-xs bg-white p-1 px-2 rounded border border-red-100"><span>${g.concepto}</span><span class="font-bold text-red-700">${fmt$(g.monto)} <button class="ml-2 text-slate-400 hover:text-red-500" onclick="delQCGasto(${i})">×</button></span></div>`).join('');
+}
+
+function addQCGasto() {
+    const s = DB.services.find(x=>x.id===window._tmpSrvId);
+    const c = document.getElementById('qc-g-c').value; 
+    const m = +document.getElementById('qc-g-m').value;
+    if(!c || !m) { appAlert('Debes seleccionar una categoría e ingresar un monto.'); return; }
+    
+    // Solo generamos el gasto interno para el servicio. ¡NO se inserta en Finanzas todavía!
+    const financeId = uid('F');
+    s.gastos.push({id: financeId, concepto: c, monto: m, categoria: c});
+
+    dbUpsert('pb_services', s);
+
+    document.getElementById('qc-g-c').value = '';
+    document.getElementById('qc-g-m').value = '';
+    renderQCGastos();
+}
+
+function delQCGasto(idx) {
+    const s = DB.services.find(x=>x.id===window._tmpSrvId);
+    // Solo lo borramos del borrador del servicio
+    s.gastos.splice(idx,1); 
+    
+    dbUpsert('pb_services', s);
+    renderQCGastos();
+}
+
+function openSrvModal(id){
+  const s=DB.services.find(x=>x.id===id), l=DB.leads.find(x=>x.id===s.leadId);
+  const ro = isTecnico() ? 'readonly disabled' : ''; 
+  const isProg = currentPage === 'programacion';
+
+  showModal(`
+    <h3 class="text-lg font-extrabold mb-1 text-navy">Servicio ${s.folio}</h3>
+    <p class="text-xs text-slate-500 mb-4">${l?.nombre||''} - ${s.status.toUpperCase()}</p>
+    
+    <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
+        <div class="text-xs text-slate-500 font-bold uppercase mb-1">Dirección del Cliente</div>
+        <div class="text-sm font-medium text-navy">${l?.calle || 'Sin calle registrada'}, ${l?.municipio || 'Sin municipio'}</div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div><label class="label">Fecha y Hora</label><input id="svm-f" type="datetime-local" class="input" value="${s.fecha?new Date(s.fecha-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):''}" ${ro}/></div>
+      <div><label class="label">Técnico</label><select id="svm-t" class="select" ${ro}><option value="">Sin asignar</option>${DB.users.filter(u=>u.rol==='tecnico').map(u=>`<option value="${u.id}" ${s.tecnicoId===u.id?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
+      <div><label class="label">Monto Base</label><input id="svm-m" type="number" class="input" value="${s.monto}" ${ro}/></div>
+      <div><label class="label">Estado</label><input class="input" value="${s.status==='cobro_pendiente'?'Pend. Auth':s.status}" readonly disabled/></div>
+      <div class="col-span-2"><label class="label">Detalles / Notas Internas</label><textarea id="svm-n" class="textarea" ${ro}>${s.notes||''}</textarea></div>
+    </div>
+    
+    ${!isProg && !isTecnico() ? `<button class="btn btn-outline text-xs mb-4" onclick="saveSrvBase('${id}')">💾 Guardar Cambios</button>` : ''}
+    ${isProg && !isTecnico() ? `<button class="btn btn-green w-full mt-2" onclick="saveSrvBase('${id}')">✓ Guardar Programación</button>` : ''}
+
+    ${!isProg ? `
+    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+      <h4 class="font-bold text-sm text-navy mb-2">📷 Evidencias Fotográficas</h4>
+      <div class="flex flex-wrap gap-2 mb-2" id="ev-container">
+        ${(s.evidencias||[]).map((e,i)=>`<div class="relative group"><img src="${e.url}" class="img-preview" onclick="window.open('${e.url}')"/><button class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100" onclick="delEv(${i},'${id}')">×</button></div>`).join('')}
+      </div>
+      <input type="file" id="ev-upload-mod" accept="image/*" multiple class="hidden" onchange="uploadEv('${id}', this)"/>
+      <button class="btn btn-ghost border-dashed border-2 border-slate-300 w-full" onclick="document.getElementById('ev-upload-mod').click()">+ Adjuntar Fotos</button>
+    </div>
+
+    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+      <h4 class="font-bold text-sm text-navy mb-2">Flujo Operativo</h4>
+      <div class="text-xs mb-2 flex justify-between">
+          <div>Check-in: <b>${fmtDateTime(s.checkin)}</b></div>
+          <div>Check-out: <b>${fmtDateTime(s.checkout)}</b></div>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-3">
+        ${!s.checkin ? `<button class="btn btn-primary" onclick="srvAction('${id}','checkin')">Marcar Check-in</button>` : ''}
+        ${s.checkin && !s.checkout ? `<button class="btn btn-navy" onclick="srvAction('${id}','checkout')">Marcar Check-out</button>` : ''}
+        ${s.status==='terminado' ? `<button class="btn btn-green" onclick="openQuickCobro('${id}')">Registrar Cobro</button>` : ''}
+        ${isAdmin() && s.status!=='cancelado' && s.status!=='finalizado' ? `<button class="btn btn-danger ml-auto" onclick="srvAction('${id}','cancelar')">Cancelar</button>` : ''}
+      </div>
+    </div>
+    ` : ''}
+  `);
+}
+
+function saveSrvBase(id){
+  const s=DB.services.find(x=>x.id===id);
+  const df=document.getElementById('svm-f').value;
+  if(df) {
+    const nd=new Date(df).getTime();
+    if(s.fecha!==nd) {
+      if(!s.reagendamientos) s.reagendamientos=[];
+      s.reagendamientos.push({de:s.fecha, a:nd, motivo:'Edición Manual', user:session.userId, ts:Date.now()});
+      s.fecha=nd;
+    }
+  }
+  s.tecnicoId=document.getElementById('svm-t').value;
+  s.monto=+document.getElementById('svm-m').value;
+  s.notes=document.getElementById('svm-n').value;
+  dbUpsert('pb_services', s); 
+  
+  if(currentPage==='programacion') {
+      closeModal();
+      appAlert('Programación guardada con éxito.');
+      renderProgramacion(document.getElementById('page-content'));
+  } else {
+      appAlert('Datos base actualizados');
+      renderSrvGrid();
+  }
+}
+
+function srvAction(id, act){
+  const s=DB.services.find(x=>x.id===id);
+  if(act==='checkin'){ s.checkin=Date.now(); s.status='iniciado'; }
+  if(act==='checkout'){ s.checkout=Date.now(); s.status='terminado'; }
+  if(act==='cobrar_rapido'){
+    const m = +document.getElementById('qc-m').value;
+    const met = document.getElementById('qc-met').value;
+    s.cobro = { monto: m, metodo: met, ts: Date.now(), user: session.userId };
+    s.status = 'cobro_pendiente'; 
+    appAlert('Cobro y gastos guardados en el servicio. El folio pasó a "Pendiente de Autorización" para que un Administrador lo apruebe en Finanzas.');
+  }
+  if(act==='cancelar'){ s.status='cancelado'; }
+  
+  dbUpsert('pb_services', s); 
+  closeModal();
+  if(currentPage==='servicios') renderSrvGrid();
+}
+
+function uploadEv(id, input){
+  const s=DB.services.find(x=>x.id===id); if(!s.evidencias) s.evidencias=[];
+  Array.from(input.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
+        const MAX=800; const scale=img.width>MAX ? MAX/img.width : 1;
+        canvas.width=img.width*scale; canvas.height=img.height*scale;
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        s.evidencias.push({url: canvas.toDataURL('image/jpeg', 0.6), ts: Date.now(), user: session.userId});
+        dbUpsert('pb_services', s);
+        if(document.getElementById('ev-container')) openSrvModal(id); 
+      }; img.src=e.target.result;
+    }; reader.readAsDataURL(file);
+  });
+}
+function delEv(idx, id){ 
+    const s=DB.services.find(x=>x.id===id); 
+    s.evidencias.splice(idx,1); 
+    dbUpsert('pb_services', s); 
+    openSrvModal(id); 
+}
+
+let finP={mes:new Date().getMonth(), anio:new Date().getFullYear()};
+function renderFinanzas(c){
+  c.innerHTML=`
+  <div class="flex justify-end items-center mb-4 gap-2">
+    <select class="select w-auto" id="fin-mes">${MESES.map((m,i)=>`<option value="${i}" ${i===finP.mes?'selected':''}>${m}</option>`).join('')}<option value="-1">Todos</option></select>
+    <select class="select w-auto" id="fin-anio">${[2024,2025,2026].map(y=>`<option ${y===finP.anio?'selected':''}>${y}</option>`).join('')}</select>
+    <button class="btn btn-green" onclick="openFinModal('ingreso')">+ Ingreso Manual</button>
+    <button class="btn btn-danger" onclick="openFinModal('gasto')">+ Gasto Manual</button>
+  </div>
+  <div id="fin-auth" class="mb-4"></div>
+  <div id="fin-content"></div>`;
+  document.getElementById('fin-mes').onchange=e=>{finP.mes=+e.target.value;renderFin()};
+  document.getElementById('fin-anio').onchange=e=>{finP.anio=+e.target.value;renderFin()};
+  renderFin();
+}
+function renderFin(){
+  const pend = DB.services.filter(s=>s.status==='cobro_pendiente');
+  const fa=document.getElementById('fin-auth');
+  if(pend.length){
+    fa.innerHTML=`<div class="card border-orange-300 p-4 bg-orange-50 mb-4 shadow-sm">
+      <h3 class="font-bold text-orange-800 mb-2">⚠️ Autorizaciones Pendientes (${pend.length})</h3>
+      <p class="text-xs text-orange-700 mb-3">Al aprobar, se registrará tanto el ingreso como los gastos operativos reportados en la cuenta de Finanzas.</p>
+      ${pend.map(s=>`
+        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-orange-200 mb-2">
+          <div><div class="font-bold text-sm">${s.folio} - ${DB.leads.find(l=>l.id===s.leadId)?.nombre}</div><div class="text-xs text-slate-500">${s.cobro.metodo} · Registrado por ${DB.users.find(u=>u.id===s.cobro.user)?.nombre}</div></div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+                <div class="font-extrabold text-orange-600">+ ${fmt$(s.cobro.monto)}</div>
+                ${s.gastos?.length ? `<div class="text-xs font-bold text-red-500">- ${fmt$(s.gastos.reduce((a,b)=>a+b.monto,0))} (Gastos Op.)</div>` : ''}
+            </div>
+            <button class="btn btn-green text-xs" onclick="authCobro('${s.id}', true)">Aprobar</button>
+            <button class="btn btn-danger text-xs" onclick="authCobro('${s.id}', false)">Rechazar</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+  } else { fa.innerHTML=''; }
+
+  const list=DB.finances.filter(f=>finP.mes<0||inPeriod(f.fecha,finP.mes,finP.anio));
+  
+  const ingOp = list.filter(f=>f.tipo==='ingreso' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const gasOp = list.filter(f=>f.tipo==='gasto' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const utilidadOp = ingOp - gasOp;
+  const percUtilOp = ingOp > 0 ? ((utilidadOp / ingOp) * 100).toFixed(1) : 0;
+
+  const invTotal = list.filter(f=>f.tipo==='ingreso' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const invGasto = list.filter(f=>f.tipo==='gasto' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const invDisp = invTotal - invGasto;
+
+  document.getElementById('fin-content').innerHTML=`
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-green)">💰</div><div><div class="kpi-val">${fmt$(ingOp)}</div><div class="kpi-lbl">Ingresos Op.</div></div></div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:#dc2626">💸</div><div><div class="kpi-val">${fmt$(gasOp)}</div><div class="kpi-lbl">Gastos Op.</div></div></div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-teal)">📈</div><div><div class="kpi-val">${fmt$(utilidadOp)}</div><div class="kpi-lbl">Utilidad Op. <span class="text-[var(--pb-teal)] font-bold ml-1">(${percUtilOp}%)</span></div></div></div></div>
+      <div class="kpi bg-blue-50 border border-blue-200"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-blue)">🏦</div><div><div class="kpi-val text-blue-800">${fmt$(invTotal)}</div><div class="kpi-lbl">Fondo Inversión</div></div></div></div>
+      <div class="kpi bg-purple-50 border border-purple-200"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-purple)">📉</div><div><div class="kpi-val text-purple-800">${fmt$(invDisp)}</div><div class="kpi-lbl">Inversión Disp.</div></div></div></div>
+    </div>
+    <div class="card p-5"><div class="overflow-x-auto"><table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría/Método</th><th>Ref / Descripción</th><th class="text-right">Monto</th><th></th></tr></thead>
+      <tbody>${list.length?list.sort((a,b)=>b.fecha-a.fecha).map(f=>`<tr>
+        <td>${fmtDate(f.fecha)}</td>
+        <td><span class="chip ${f.tipo==='ingreso'?'chip-green':'chip-red'}">${f.tipo.toUpperCase()}</span> ${f.isInvestment?'<span class="chip chip-blue ml-1 mt-1">INVERSIÓN</span>':''}</td>
+        <td><div class="text-sm">${f.categoria}</div><div class="text-xs text-slate-500">${f.metodo}</div></td>
+        <td><div class="font-semibold text-sm text-navy">${f.ref||'—'}</div><div class="text-xs text-slate-500">${f.desc||'—'}</div></td>
+        <td class="text-right font-bold ${f.tipo==='ingreso'?'text-green-700':'text-red-600'}">${fmt$(f.monto)}</td>
+        <td class="text-right flex justify-end gap-1"><button class="btn btn-ghost text-xs" onclick="openFinModal(null, '${f.id}')">Editar</button><button class="btn btn-ghost text-xs text-red-500" onclick="delFin('${f.id}')">✕</button></td>
+      </tr>`).join(''):'<tr><td colspan="6" class="text-center text-slate-400 py-8">Sin movimientos en este periodo</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+
+function authCobro(srvId, approved){
+  const s=DB.services.find(x=>x.id===srvId);
+  if(approved){
+    // 1. Crear el Ingreso Oficial
+    const newF = {id:uid('F'), tipo:'ingreso', categoria:'Servicio', monto:s.cobro.monto, metodo:s.cobro.metodo, fecha:Date.now(), ref:s.folio, desc:'Cobro de Servicio', isInvestment: false};
+    DB.finances.push(newF);
+    dbUpsert('pb_finances', newF);
+
+    // 2. Oficializar los Gastos (Solo al aprobar se envían a la base de Finanzas)
+    if(s.gastos && s.gastos.length > 0) {
+        s.gastos.forEach(g => {
+            const nF = {
+                id: g.id, tipo: 'gasto', categoria: g.categoria, monto: g.monto, metodo: 'Efectivo',
+                fecha: Date.now(), ref: s.folio, desc: 'Gasto Op: ' + (g.concepto || g.categoria), isInvestment: false
+            };
+            
+            // Verificamos si existe (por seguridad) o lo agregamos
+            if (!DB.finances.find(f => f.id === g.id)) {
+                DB.finances.push(nF);
+            } else {
+                Object.assign(DB.finances.find(f => f.id === g.id), nF);
+            }
+            dbUpsert('pb_finances', nF);
+        });
+    }
+
+    s.status='finalizado'; 
+    appAlert('Cobro aprobado. Se han registrado el ingreso y los gastos en Finanzas.');
+  } else {
+    s.status='terminado'; delete s.cobro; 
+    // Los gastos se quedan adjuntos al servicio (no tocan finanzas) hasta que el técnico corrija el cobro.
+    appAlert('Cobro rechazado. El servicio regresa a estado "Terminado". El técnico debe registrar el cobro nuevamente.');
+  }
+  dbUpsert('pb_services', s);
+  renderFinanzas(document.getElementById('page-content'));
+}
+
+function openFinModal(tipo, id=null){
+  const f = id ? DB.finances.find(x=>x.id===id) : null;
+  const t = f ? f.tipo : tipo;
+  const cats = t==='ingreso' ? DB.catalogs.categoriasIngreso : DB.catalogs.categoriasGasto;
+  showModal(`
+    <h3 class="text-lg font-bold mb-3 text-navy">${id?'Editar':'Nuevo'} ${t}</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="label">Monto</label><input id="ff-m" type="number" class="input" value="${f?f.monto:''}"/></div>
+      <div><label class="label">Categoría</label><select id="ff-c" class="select">${cats.map(c=>`<option ${f&&f.categoria===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label class="label">Método</label><select id="ff-met" class="select">${DB.catalogs.metodosPago.map(m=>`<option ${f&&f.metodo===m?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div><label class="label">Fecha</label><input id="ff-f" type="date" class="input" value="${f ? new Date(f.fecha).toISOString().slice(0,10) : new Date().toISOString().slice(0,10)}"/></div>
+      <div class="col-span-2"><label class="label">Descripción</label><input id="ff-d" class="input" value="${f?f.desc||'':''}"/></div>
+      
+      <div class="col-span-2 bg-slate-50 p-3 rounded border border-slate-200">
+         <label class="flex items-center gap-2 font-bold text-sm text-navy cursor-pointer">
+            <input type="checkbox" id="ff-inv" ${f&&f.isInvestment?'checked':''} class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
+            Registrar como movimiento de Inversión / Capital
+         </label>
+         <p class="text-xs text-slate-500 mt-1 ml-6">Activa esta casilla si este movimiento pertenece a fondos de aportación, préstamos o gastos en equipo mayor (CAPEX) para que no afecte la utilidad operativa.</p>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveFin('${t}', '${id||''}')">Guardar</button></div>`);
+}
+
+function saveFin(tipo, id){
+  const d = {
+      monto: +document.getElementById('ff-m').value,
+      categoria: document.getElementById('ff-c').value,
+      metodo: document.getElementById('ff-met').value,
+      fecha: new Date(document.getElementById('ff-f').value + 'T12:00:00').getTime(), 
+      desc: document.getElementById('ff-d').value,
+      isInvestment: document.getElementById('ff-inv').checked
+  };
+  
+  if(id){
+     const f = DB.finances.find(x=>x.id===id);
+     Object.assign(f, d);
+     dbUpsert('pb_finances', f);
+  } else {
+     const nF = {id:uid('F'), tipo, ...d};
+     DB.finances.push(nF);
+     dbUpsert('pb_finances', nF);
+  }
+  closeModal(); renderFin();
+}
+
+function delFin(id){
+   if(confirm('¿Seguro que deseas eliminar este registro financiero?')){
+       DB.finances = DB.finances.filter(x=>x.id!==id);
+       dbDelete('pb_finances', id);
+       renderFin();
+   }
+}
+
+function renderMarketing(c){
+  const mkData = DB.marketing.map(m => {
+      const mLeads = DB.leads.filter(l => l.campanaId === m.id).length;
+      const mClientes = DB.leads.filter(l => l.campanaId === m.id && l.stageId === DB.settings.stageWonId).length;
+      return { ...m, totalLeads: mLeads + (m.leads||0), totalClientes: mClientes + (m.clientes||0) };
+  });
+
+  c.innerHTML=`
+  <div class="flex justify-between items-center mb-4">
+    <div class="text-sm text-slate-500">Métricas globales y por campaña basados en historial dinámico</div>
+    <button class="btn btn-green" onclick="openMktModal()">+ Crear Campaña MKT</button>
+  </div>
+  
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+     <div class="kpi card-soft"><div class="kpi-lbl">Leads Generados</div><div class="kpi-val" id="mk-l">0</div></div>
+     <div class="kpi card-soft"><div class="kpi-lbl">Inversión (AdSpend)</div><div class="kpi-val text-red-600" id="mk-i">$0</div></div>
+     <div class="kpi card-soft"><div class="kpi-lbl">Costo por Lead (CPL)</div><div class="kpi-val text-blue-600" id="mk-cpl">$0</div></div>
+     <div class="kpi card-soft"><div class="kpi-lbl">Costo Adquisición (CAC)</div><div class="kpi-val text-green-600" id="mk-cac">$0</div></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Leads Generados por Canal</h3><div class="relative h-64"><canvas id="mkt-leads-ch"></canvas></div></div>
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Conversión Lead a Cliente (%)</h3><div class="relative h-64"><canvas id="mkt-conv-ch"></canvas></div></div>
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Comparativo CAC y CPL</h3><div class="relative h-64"><canvas id="mkt-cac-ch"></canvas></div></div>
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Histórico Inversión vs Leads</h3><div class="relative h-64"><canvas id="mkt-hist-ch"></canvas></div></div>
+  </div>
+  
+  <div class="card p-5">
+    <h3 class="font-bold text-navy mb-4">Registro de Campañas</h3>
+    <div class="overflow-x-auto"><table class="w-full text-sm">
+        <thead><tr><th>Nombre / Canal</th><th>Mes/Año</th><th>Inversión</th><th>Leads</th><th>Clientes</th><th>CPL</th><th>Acciones</th></tr></thead>
+        <tbody>${mkData.sort((a,b)=>b.mes-a.mes).map(m=>`<tr>
+            <td><div class="font-bold text-navy">${m.nombre||'Campaña sin nombre'}</div><span class="chip chip-teal mt-1">${m.canal}</span></td>
+            <td>${MESES[m.mes]} ${m.anio}</td>
+            <td class="text-red-500">${fmt$(m.inversion)}</td>
+            <td class="font-bold">${m.totalLeads}</td>
+            <td class="font-bold text-green-600">${m.totalClientes}</td>
+            <td>${fmt$(m.totalLeads ? m.inversion/m.totalLeads : 0)}</td>
+            <td><div class="flex gap-1"><button class="btn btn-outline py-1 text-xs" onclick="openMktModal('${m.id}')">Editar</button><button class="btn btn-danger py-1 text-xs" onclick="delMkt('${m.id}')">✕</button></div></td>
+        </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+  setTimeout(drawMarketingCharts, 100);
+}
+
+function drawMarketingCharts() {
+    destroyCharts('mkt');
+    
+    // Mapeo dinámico
+    const mk = DB.marketing.map(m => {
+        const mLeads = DB.leads.filter(l => l.campanaId === m.id).length;
+        const mClientes = DB.leads.filter(l => l.campanaId === m.id && l.stageId === DB.settings.stageWonId).length;
+        return { ...m, leads: mLeads + (m.leads||0), clientes: mClientes + (m.clientes||0) };
+    });
+
+    const totals = mk.reduce((acc, c) => {
+        acc.i += c.inversion; acc.l += c.leads; acc.cl += c.clientes; return acc;
+    }, {i:0, l:0, cl:0});
+
+    document.getElementById('mk-l').textContent = totals.l;
+    document.getElementById('mk-i').textContent = fmt$(totals.i);
+    document.getElementById('mk-cpl').textContent = fmt$(totals.l ? totals.i/totals.l : 0);
+    document.getElementById('mk-cac').textContent = fmt$(totals.cl ? totals.i/totals.cl : 0);
+
+    const canales = DB.catalogs.canalesMkt;
+    const stats = canales.map(can => {
+        const d = mk.filter(x=>x.canal===can).reduce((a,b)=>{a.l+=b.leads; a.cl+=b.clientes; a.i+=b.inversion; return a;}, {l:0,cl:0,i:0});
+        return { canal: can, ...d, cpl: d.l?d.i/d.l:0, cac: d.cl?d.i/d.cl:0, conv: d.l?(d.cl/d.l)*100:0 };
+    });
+
+    const colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444'];
+    
+    dashCharts.mkt.c1 = new Chart(document.getElementById('mkt-leads-ch'), {
+        type: 'bar', data: { labels: stats.map(s=>s.canal), datasets: [{ label: 'Leads', data: stats.map(s=>s.l), backgroundColor: colors }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
+    });
+
+    dashCharts.mkt.c2 = new Chart(document.getElementById('mkt-conv-ch'), {
+        type: 'bar', data: { labels: stats.map(s=>s.canal), datasets: [{ label: '% Conversión', data: stats.map(s=>s.conv.toFixed(1)), backgroundColor: '#11999E' }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
+    });
+
+    dashCharts.mkt.c3 = new Chart(document.getElementById('mkt-cac-ch'), {
+        type: 'bar', data: { 
+            labels: stats.map(s=>s.canal), 
+            datasets: [
+                { label: 'CPL', data: stats.map(s=>s.cpl), backgroundColor: '#3b82f6' },
+                { label: 'CAC', data: stats.map(s=>s.cac), backgroundColor: '#ef4444' }
+            ] 
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    const mKeys = [...new Set(mk.map(x=>x.anio+'-'+x.mes))].sort();
+    const hLabels = mKeys.map(k=>MESES[k.split('-')[1]].substring(0,3));
+    const hLeads = mKeys.map(k=>mk.filter(x=>x.anio+'-'+x.mes===k).reduce((a,b)=>a+b.leads,0));
+    const hInv = mKeys.map(k=>mk.filter(x=>x.anio+'-'+x.mes===k).reduce((a,b)=>a+b.inversion,0));
+
+    dashCharts.mkt.c4 = new Chart(document.getElementById('mkt-hist-ch'), {
+        type: 'line', data: { 
+            labels: hLabels, 
+            datasets: [
+                { label: 'Leads', data: hLeads, borderColor: '#10b981', yAxisID: 'y' },
+                { label: 'Inversión ($)', data: hInv, borderColor: '#f59e0b', yAxisID: 'y1' }
+            ] 
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { type: 'linear', position: 'left' }, y1: { type: 'linear', position: 'right' } }
+        }
+    });
+}
+
+function openMktModal(id=null){
+  const m = id ? DB.marketing.find(x=>x.id===id) : {canal:DB.catalogs.canalesMkt[0], nombre:'', inversion:0, mes:new Date().getMonth(), anio:new Date().getFullYear()};
+  showModal(`
+    <h3 class="text-lg font-bold mb-3 text-navy">${id?'Editar':'Nueva'} Campaña MKT</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="col-span-2"><label class="label">Nombre de Campaña *</label><input id="mf-n" class="input" value="${m.nombre||''}"/></div>
+      <div><label class="label">Canal</label><select id="mf-c" class="select">${DB.catalogs.canalesMkt.map(c=>`<option ${m.canal===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label class="label">Inversión MXN</label><input id="mf-i" type="number" class="input" value="${m.inversion}"/></div>
+      <div><label class="label">Mes</label><select id="mf-m" class="select">${MESES.map((mes,i)=>`<option value="${i}" ${i===m.mes?'selected':''}>${mes}</option>`).join('')}</select></div>
+      <div><label class="label">Año</label><select id="mf-a" class="select">${[2024,2025,2026].map(y=>`<option ${y===m.anio?'selected':''}>${y}</option>`).join('')}</select></div>
+    </div>
+    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveMkt('${id||''}')">Guardar</button></div>`);
+}
+
+function saveMkt(id){
+  const d = {
+      nombre: document.getElementById('mf-n').value,
+      canal: document.getElementById('mf-c').value,
+      inversion: +document.getElementById('mf-i').value,
+      mes: +document.getElementById('mf-m').value,
+      anio: +document.getElementById('mf-a').value
+  };
+  if(id){
+      const m = DB.marketing.find(x=>x.id===id);
+      Object.assign(m, d);
+      dbUpsert('pb_marketing', m);
+  } else {
+      const nM = {id:uid('M'), ...d, leads:0, clientes:0};
+      DB.marketing.push(nM);
+      dbUpsert('pb_marketing', nM);
+  }
+  closeModal(); renderMarketing(document.getElementById('page-content'));
+}
+
+function delMkt(id){
+    if(confirm('¿Seguro que deseas eliminar esta campaña?')){
+        DB.marketing = DB.marketing.filter(x=>x.id!==id);
+        dbDelete('pb_marketing', id);
+        renderMarketing(document.getElementById('page-content'));
+    }
+}
+
+function renderProdVentas(c){
+  c.innerHTML=`
+  <div class="flex justify-between items-center mb-4">
+    <div class="text-sm text-slate-500">Métricas de desempeño del equipo comercial (Todos los tiempos)</div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Ranking de Facturación</h3><div class="relative h-64"><canvas id="ven-rank-ch"></canvas></div></div>
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Tasa de Conversión (Leads a Cotiz. Aceptada)</h3><div class="relative h-64"><canvas id="ven-conv-ch"></canvas></div></div>
+  </div>
+  <div class="card p-5">
+    <h3 class="font-bold text-navy mb-4">Tabla de Asesores</h3>
+    <div class="overflow-x-auto"><table class="w-full text-sm" id="ven-table"></table></div>
+  </div>`;
+  setTimeout(drawVentasCharts, 100);
+}
+
+function drawVentasCharts() {
+    destroyCharts('ven');
+    const asesores = DB.users.filter(u=>u.rol==='ventas' || u.rol==='admin');
+    
+    const stats = asesores.map(u => {
+        const leads = DB.leads.filter(l=>l.asesorId===u.id);
+        const quotes = DB.quotes.filter(q=>q.asesorId===u.id);
+        const qAceptadas = quotes.filter(q=>q.status==='aceptada');
+        const facturado = qAceptadas.reduce((a,b)=>a+b.total,0);
+        return {
+            nombre: u.nombre, leads: leads.length, quotesEnviadas: quotes.length,
+            quotesAceptadas: qAceptadas.length, facturado,
+            conversion: leads.length ? (qAceptadas.length/leads.length)*100 : 0
+        };
+    }).filter(s=>s.leads > 0 || s.quotesEnviadas > 0).sort((a,b)=>b.facturado-a.facturado);
+
+    document.getElementById('ven-table').innerHTML = `<thead><tr><th>Asesor</th><th>Leads Asignados</th><th>Cotiz. Enviadas</th><th>Cotiz. Aceptadas</th><th>Conversión</th><th>Total Facturado</th></tr></thead><tbody>
+        ${stats.map(s=>`<tr><td class="font-bold">${s.nombre}</td><td>${s.leads}</td><td>${s.quotesEnviadas}</td><td class="text-green-600 font-bold">${s.quotesAceptadas}</td><td>${s.conversion.toFixed(1)}%</td><td class="text-blue-600 font-bold">${fmt$(s.facturado)}</td></tr>`).join('')}
+    </tbody>`;
+
+    dashCharts.ven.c1 = new Chart(document.getElementById('ven-rank-ch'), {
+        type: 'bar', data: { labels: stats.map(s=>s.nombre), datasets: [{ label: 'Facturado ($)', data: stats.map(s=>s.facturado), backgroundColor: '#3b82f6' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
+    });
+
+    dashCharts.ven.c2 = new Chart(document.getElementById('ven-conv-ch'), {
+        type: 'bar', data: { labels: stats.map(s=>s.nombre), datasets: [{ label: '% Conversión', data: stats.map(s=>s.conversion.toFixed(1)), backgroundColor: '#10b981' }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
+    });
+}
+
+function renderProdTecnicos(c){
+  c.innerHTML=`
+  <div class="flex justify-between items-center mb-4">
+    <div class="text-sm text-slate-500">Métricas de eficiencia y operación en campo</div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Servicios Completados vs Pendientes</h3><div class="relative h-64"><canvas id="tec-srv-ch"></canvas></div></div>
+    <div class="card p-5"><h3 class="font-bold text-xs uppercase text-slate-500 mb-3">Ingresos Operados por Técnico</h3><div class="relative h-64"><canvas id="tec-ing-ch"></canvas></div></div>
+  </div>
+  <div class="card p-5">
+    <h3 class="font-bold text-navy mb-4">Tabla Operativa</h3>
+    <div class="overflow-x-auto"><table class="w-full text-sm" id="tec-table"></table></div>
+  </div>`;
+  setTimeout(drawTecnicosCharts, 100);
+}
+
+function drawTecnicosCharts() {
+    destroyCharts('tec');
+    const tecnicos = DB.users.filter(u=>u.rol==='tecnico');
+    
+    const stats = tecnicos.map(u => {
+        const srvs = DB.services.filter(s=>s.tecnicoId===u.id && s.status!=='cancelado');
+        const fin = srvs.filter(s=>s.status==='finalizado');
+        const pen = srvs.filter(s=>s.status!=='finalizado');
+        const ing = fin.reduce((a,b)=>a+b.monto,0);
+        return { nombre: u.nombre, asignados: srvs.length, finalizados: fin.length, pendientes: pen.length, ingreso: ing };
+    }).filter(s=>s.asignados > 0);
+
+    document.getElementById('tec-table').innerHTML = `<thead><tr><th>Técnico</th><th>Srv. Asignados</th><th>Completados</th><th>Pendientes</th><th>Cumplimiento</th><th>Monto Operado</th></tr></thead><tbody>
+        ${stats.map(s=>`<tr><td class="font-bold">${s.nombre}</td><td>${s.asignados}</td><td class="text-green-600 font-bold">${s.finalizados}</td><td class="text-amber-500">${s.pendientes}</td><td>${s.asignados?((s.finalizados/s.asignados)*100).toFixed(1):0}%</td><td class="text-blue-600 font-bold">${fmt$(s.ingreso)}</td></tr>`).join('')}
+    </tbody>`;
+
+    dashCharts.tec.c1 = new Chart(document.getElementById('tec-srv-ch'), {
+        type: 'bar', data: { 
+            labels: stats.map(s=>s.nombre), 
+            datasets: [
+                { label: 'Completados', data: stats.map(s=>s.finalizados), backgroundColor: '#10b981' },
+                { label: 'Pendientes', data: stats.map(s=>s.pendientes), backgroundColor: '#f59e0b' }
+            ] 
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+    });
+
+    dashCharts.tec.c2 = new Chart(document.getElementById('tec-ing-ch'), {
+        type: 'bar', data: { labels: stats.map(s=>s.nombre), datasets: [{ label: 'Monto ($)', data: stats.map(s=>s.ingreso), backgroundColor: '#8b5cf6' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} } }
+    });
+}
+
 function renderDashboard(c){
   const leadsActivos = DB.leads.filter(l=>l.status==='activo' && l.stageId !== DB.settings.stageWonId).length;
   const clientesTerminados = DB.leads.filter(l=>l.stageId === DB.settings.stageWonId).length;
@@ -45,7 +1583,58 @@ function renderDashboard(c){
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-<!-- ... existing code ... -->
+      <div class="card p-5 shadow-sm">
+        <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Próximos Servicios</h3>
+        <table class="w-full text-sm">
+          <tbody>
+            ${ultimosServicios.length ? ultimosServicios.map(s=>`
+              <tr>
+                <td class="py-2 border-b border-slate-100">
+                  <div class="font-bold text-navy">${DB.leads.find(l=>l.id===s.leadId)?.nombre || '—'}</div>
+                  <div class="text-xs text-slate-500">${s.plaga}</div>
+                </td>
+                <td class="py-2 border-b border-slate-100 text-right">
+                  <div class="font-semibold">${fmtDate(s.fecha)}</div>
+                  <span class="chip chip-navy mt-1">${s.status.toUpperCase()}</span>
+                </td>
+              </tr>
+            `).join('') : '<tr><td colspan="2" class="text-slate-400 py-4 text-center">Sin servicios programados</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div class="card p-5 shadow-sm">
+        <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Últimos Movimientos Financieros</h3>
+        <table class="w-full text-sm">
+          <tbody>
+            ${ultimosMovimientos.length ? ultimosMovimientos.map(f=>`
+              <tr>
+                <td class="py-2 border-b border-slate-100">
+                  <div class="font-bold text-navy">${f.categoria}</div>
+                  <div class="text-xs text-slate-500">${fmtDate(f.fecha)}</div>
+                </td>
+                <td class="py-2 border-b border-slate-100 text-right">
+                  <div class="font-bold ${f.tipo==='ingreso'?'text-green-600':'text-red-500'}">${f.tipo==='ingreso'?'+':'-'} ${fmt$(f.monto)}</div>
+                </td>
+              </tr>
+            `).join('') : '<tr><td colspan="2" class="text-slate-400 py-4 text-center">Sin movimientos</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  setTimeout(drawDashboardCharts, 100);
+}
+
+function getLast6Months() {
+  let labels = [], keys = []; let d = new Date(); d.setDate(1); 
+  for(let i=5; i>=0; i--) {
+      let temp = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      labels.push(MESES[temp.getMonth()].substring(0,3) + ' ' + temp.getFullYear().toString().substring(2));
+      keys.push(temp.getFullYear() + '-' + temp.getMonth());
+  }
+  return {labels, keys};
+}
+
 function drawDashboardCharts() {
   destroyCharts('dash');
 
@@ -88,25 +1677,85 @@ function drawDashboardCharts() {
 }
 
 function renderUsuarios(c){
-<!-- ... existing code ... -->
-  const list=DB.finances.filter(f=>finP.mes<0||inPeriod(f.fecha,finP.mes,finP.anio));
-  
-  const ingOp = list.filter(f=>f.tipo==='ingreso' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
-  const gasOp = list.filter(f=>f.tipo==='gasto' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
-  const utilidadOp = ingOp - gasOp;
-  const percUtilOp = ingOp > 0 ? ((utilidadOp / ingOp) * 100).toFixed(1) : 0;
-
-  const invTotal = list.filter(f=>f.tipo==='ingreso' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
-  const invGasto = list.filter(f=>f.tipo==='gasto' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
-  const invDisp = invTotal - invGasto;
-
-  document.getElementById('fin-content').innerHTML=`
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-green)">💰</div><div><div class="kpi-val">${fmt$(ingOp)}</div><div class="kpi-lbl">Ingresos Op.</div></div></div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:#dc2626">💸</div><div><div class="kpi-val">${fmt$(gasOp)}</div><div class="kpi-lbl">Gastos Op.</div></div></div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-teal)">📈</div><div><div class="kpi-val">${fmt$(utilidadOp)}</div><div class="kpi-lbl">Utilidad Op. <span class="text-[var(--pb-teal)] font-bold ml-1">(${percUtilOp}%)</span></div></div></div></div>
-      <div class="kpi bg-blue-50 border border-blue-200"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-blue)">🏦</div><div><div class="kpi-val text-blue-800">${fmt$(invTotal)}</div><div class="kpi-lbl">Fondo Inversión</div></div></div></div>
-      <div class="kpi bg-purple-50 border border-purple-200"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-purple)">📉</div><div><div class="kpi-val text-purple-800">${fmt$(invDisp)}</div><div class="kpi-lbl">Inversión Disp.</div></div></div></div>
+  c.innerHTML=`<div class="card p-5"><div class="flex justify-between items-center mb-4"><div class="text-sm font-bold text-navy">Equipo</div><button class="btn btn-green" onclick="openUserModal()">+ Usuario</button></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th></th></tr></thead><tbody>${DB.users.map(u=>`<tr><td>${u.nombre}</td><td>${u.email}</td><td><span class="chip chip-navy">${u.rol}</span></td><td><button class="btn btn-outline py-1 text-xs" onclick="openUserModal('${u.id}')">Editar</button></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function openUserModal(id){
+  const u=id?DB.users.find(x=>x.id===id):{nombre:'',email:'',tel:'',pass:'',rol:'tecnico'};
+  showModal(`
+    <h3 class="text-lg font-bold mb-3 text-navy">${id?'Editar':'Nuevo'} usuario</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="col-span-2"><label class="label">Nombre</label><input id="uf-n" class="input" value="${u.nombre}"/></div>
+      <div><label class="label">Email</label><input id="uf-e" class="input" value="${u.email}"/></div>
+      <div><label class="label">Teléfono</label><input id="uf-t" class="input" value="${u.tel||''}"/></div>
+      <div><label class="label">Contraseña</label><input id="uf-p" class="input" value="${u.pass}"/></div>
+      <div><label class="label">Rol</label><select id="uf-r" class="select"><option value="admin" ${u.rol==='admin'?'selected':''}>Admin</option><option value="ventas" ${u.rol==='ventas'?'selected':''}>Ventas</option><option value="tecnico" ${u.rol==='tecnico'?'selected':''}>Técnico</option></select></div>
     </div>
-    <div class="card p-5"><div class="overflow-x-auto"><table>
-<!-- ... existing code ... -->
+    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveUser('${id||''}')">Guardar</button></div>`);
+}
+function saveUser(id){
+  const d={nombre:document.getElementById('uf-n').value,email:document.getElementById('uf-e').value,tel:document.getElementById('uf-t').value,pass:document.getElementById('uf-p').value,rol:document.getElementById('uf-r').value};
+  if(!d.nombre||!d.email){appAlert('Faltan datos');return}
+  if(id) {
+      const u = DB.users.find(x=>x.id===id);
+      Object.assign(u,d);
+      dbUpsert('pb_users', u);
+  } else {
+      const u = {id:uid('u'),...d};
+      DB.users.push(u);
+      dbUpsert('pb_users', u);
+  }
+  closeModal(); renderUsuarios(document.getElementById('page-content'));
+}
+
+function renderConfig(c){
+  c.innerHTML=`<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="card p-5"><div class="text-sm font-bold mb-3 text-navy">Datos Empresa</div>${['nombre','tel','email','direccion','rfc'].map(k=>`<label class="label">${k}</label><input class="input mb-2" id="co-${k}" value="${DB.company[k]}"/>`).join('')}<button class="btn btn-green mt-2" onclick="saveCompany()">Guardar</button></div>
+  <div class="card p-5"><div class="text-sm font-bold mb-3 text-navy">Etapas Pipeline</div><div class="text-xs text-slate-500 mb-3">Las etapas protegidas por sistema no se pueden borrar.</div><div id="cfg-stages" class="space-y-1 mb-3"></div><button class="btn btn-outline" onclick="addStage()">+ Etapa</button></div>
+  <div class="card p-5 md:col-span-2"><div class="text-sm font-bold mb-3 text-navy">Catálogos de Sistema</div><div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cfg-cats"></div></div></div>`;
+  renderCfgStages(); renderCfgCats();
+}
+function saveCompany(){ ['nombre','tel','email','direccion','rfc'].forEach(k=>DB.company[k]=document.getElementById('co-'+k).value); saveConfig(); appAlert('Datos de empresa guardados'); }
+function renderCfgStages(){
+  document.getElementById('cfg-stages').innerHTML=DB.stages.sort((a,b)=>a.order-b.order).map(s=>`
+    <div class="flex items-center gap-2 p-2 border rounded text-sm bg-slate-50">
+      <input class="input py-1 w-16" type="number" value="${s.order}" onchange="DB.stages.find(x=>x.id==='${s.id}').order=+this.value;saveConfig()"/>
+      <input type="color" value="${s.color}" class="h-8 w-8 cursor-pointer" onchange="DB.stages.find(x=>x.id==='${s.id}').color=this.value;saveConfig()"/>
+      <input class="input py-1" value="${s.icon}" style="width:50px" onchange="DB.stages.find(x=>x.id==='${s.id}').icon=this.value;saveConfig()"/>
+      <input class="input py-1" value="${s.name}" ${s.system?'readonly disabled':''} onchange="DB.stages.find(x=>x.id==='${s.id}').name=this.value;saveConfig()"/>
+      ${s.system?'<span class="chip chip-amber px-2 text-[10px]">Protegida</span>':`<button class="btn btn-danger py-1 px-3" onclick="delStage('${s.id}')">✕</button>`}
+    </div>`).join('');
+}
+function addStage(){ DB.stages.push({id:uid('s'),name:'Nueva Etapa',color:'#3b82f6',icon:'🐞',system:false,order:DB.stages.length+1}); saveConfig(); renderCfgStages(); }
+function delStage(id){
+    if(DB.leads.some(l=>l.stageId===id)){ appAlert('No puedes borrar una etapa que contiene leads activos.'); return; }
+    DB.stages=DB.stages.filter(x=>x.id!==id); saveConfig(); renderCfgStages();
+}
+function renderCfgCats(){
+  const cs=DB.catalogs;
+  document.getElementById('cfg-cats').innerHTML=Object.keys(cs).map(k=>`
+    <div><div class="label">${k.toUpperCase()}</div>
+      <div class="space-y-1">${cs[k].map((v,i)=>`<div class="flex gap-1"><input class="input py-1 text-sm" value="${v}" onchange="DB.catalogs.${k}[${i}]=this.value;saveConfig()"/><button class="btn btn-danger py-1 px-2" onclick="DB.catalogs.${k}.splice(${i},1);saveConfig();renderCfgCats()">✕</button></div>`).join('')}</div>
+      <button class="btn btn-outline text-xs mt-1" onclick="DB.catalogs.${k}.push('Nuevo');saveConfig();renderCfgCats()">+ Añadir</button>
+    </div>`).join('');
+}
+function exportCSV(){
+  const rows=[['ID','Nombre','Tel','Municipio','Tipo','Canal','Campaña ID','Plaga','Score','Etapa','Status']];
+  DB.leads.forEach(l=>{ rows.push([l.id, l.nombre, l.tel, l.municipio, l.tipo, l.canal||'', l.campanaId||'', l.plaga, l.score, DB.stages.find(x=>x.id===l.stageId)?.name, l.status]); });
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n')); a.download='clientes.csv'; a.click();
+}
+
+// Inicialización asíncrona para esperar los datos de la nube
+async function initApp() {
+  await loadDB();
+  const ss=sessionStorage.getItem('pb_sess_v11');
+  if(ss){ 
+    const s=JSON.parse(ss); 
+    if(DB.users.find(u=>u.id===s.userId)){ 
+      session=s; showApp(); 
+    } else { document.getElementById('login-view').classList.remove('hidden'); }
+  } else { document.getElementById('login-view').classList.remove('hidden'); }
+}
+
+initApp();
+</script>
+</body>
+</html>
