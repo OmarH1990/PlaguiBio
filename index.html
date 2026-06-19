@@ -326,7 +326,6 @@ function showApp(){
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
   buildNav();
-  // Regla 1: La pantalla de inicio siempre debe ser pipeline (excepto para técnicos que solo ven servicios)
   go(isTecnico() ? 'servicios' : 'pipeline');
 }
 
@@ -413,7 +412,10 @@ function openQuickLeadModal(){
       <div><label class="label">Delegación / Municipio *</label><select id="ql-muni" class="select">${buildMuniOptions()}</select></div>
       <div class="flex gap-3">
         <div class="flex-1"><label class="label">Servicio</label><select id="ql-tipo" class="select">${DB.catalogs.tiposCliente.map(t=>`<option>${t}</option>`).join('')}</select></div>
-        <div class="flex-1"><label class="label">Asesor</label><select id="ql-asesor" class="select">${DB.users.filter(u=>u.rol==='ventas').map(u=>`<option value="${u.id}" ${u.id===session.userId?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
+        <div class="flex-1"><label class="label">Asesor</label><select id="ql-asesor" class="select">${DB.users.filter(u=>u.rol==='ventas'||u.rol==='admin').map(u=>`<option value="${u.id}" ${u.id===session.userId?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
+      </div>
+      <div class="flex gap-3 mt-3">
+        <div class="flex-1"><label class="label">Campaña (MKT)</label><select id="ql-campana" class="select"><option value="">Sin campaña / Orgánico</option>${DB.marketing.map(m=>`<option value="${m.id}">${m.nombre||'Campaña sin nombre'} (${m.canal})</option>`).join('')}</select></div>
       </div>
     </div>
     <div class="flex gap-2 mt-5 justify-end">
@@ -424,7 +426,7 @@ function openQuickLeadModal(){
 function saveQuickLead(){
   const n=document.getElementById('ql-nombre').value.trim(); const t=document.getElementById('ql-tel').value.trim();
   if(!n||!t){ appAlert('Nombre y teléfono requeridos'); return; }
-  const newLead = {id:uid('L'), nombre:n, tel:t, email:'', tipo:document.getElementById('ql-tipo').value, asesorId:document.getElementById('ql-asesor').value, plaga:DB.catalogs.plagas[0], municipio:document.getElementById('ql-muni').value, calle:'', calificacion:'Bueno', score:80, canal:DB.catalogs.canalesMkt[0], stageId:DB.stages.find(s=>s.order===1).id, status:'activo', createdAt:Date.now()};
+  const newLead = {id:uid('L'), nombre:n, tel:t, email:'', tipo:document.getElementById('ql-tipo').value, asesorId:document.getElementById('ql-asesor').value, campanaId:document.getElementById('ql-campana').value, plaga:DB.catalogs.plagas[0], municipio:document.getElementById('ql-muni').value, calle:'', calificacion:'Bueno', score:80, canal:DB.catalogs.canalesMkt[0], stageId:DB.stages.find(s=>s.order===1).id, status:'activo', createdAt:Date.now()};
   DB.leads.push(newLead);
   dbUpsert('pb_leads', newLead);
   closeModal();
@@ -433,7 +435,7 @@ function saveQuickLead(){
 }
 
 function openLeadModal(id){
-  const l=id?DB.leads.find(x=>x.id===id):{nombre:'',tel:'',email:'',tipo:'Hogar',plaga:DB.catalogs.plagas[0],municipio:CDMX[0],calle:'',calificacion:'Bueno',score:80,stageId:DB.stages[0].id, canal:DB.catalogs.canalesMkt[0], asesorId:session.userId};
+  const l=id?DB.leads.find(x=>x.id===id):{nombre:'',tel:'',email:'',tipo:'Hogar',plaga:DB.catalogs.plagas[0],municipio:CDMX[0],calle:'',calificacion:'Bueno',score:80,stageId:DB.stages[0].id, canal:DB.catalogs.canalesMkt[0], asesorId:session.userId, campanaId:''};
   showModal(`
     <h3 class="text-lg font-extrabold mb-4" style="color:var(--pb-navy)">${id?'✏️ Editar Cliente':'📋 Registrar Cliente'}</h3>
     <div class="grid grid-cols-2 gap-3">
@@ -443,6 +445,7 @@ function openLeadModal(id){
       <div><label class="label">Tipo</label><select id="f-tipo" class="select">${DB.catalogs.tiposCliente.map(t=>`<option ${l.tipo===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div><label class="label">Plaga</label><select id="f-plaga" class="select">${DB.catalogs.plagas.map(p=>`<option ${l.plaga===p?'selected':''}>${p}</option>`).join('')}</select></div>
       <div><label class="label">Canal Origen</label><select id="f-canal" class="select">${DB.catalogs.canalesMkt.map(c=>`<option ${l.canal===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label class="label">Campaña (MKT)</label><select id="f-campana" class="select"><option value="">Sin campaña / Orgánico</option>${DB.marketing.map(m=>`<option value="${m.id}" ${l.campanaId===m.id?'selected':''}>${m.nombre||'Campaña sin nombre'} (${m.canal})</option>`).join('')}</select></div>
       <div><label class="label">Asesor</label><select id="f-asesor" class="select">${DB.users.filter(u=>u.rol==='ventas'||u.rol==='admin').map(u=>`<option value="${u.id}" ${l.asesorId===u.id?'selected':''}>${u.nombre}</option>`).join('')}</select></div>
       <div><label class="label">Municipio</label><select id="f-muni" class="select">${buildMuniOptions(l.municipio)}</select></div>
       <div><label class="label">Etapa Pipeline</label><select id="f-stage" class="select">${DB.stages.map(s=>`<option value="${s.id}" ${l.stageId===s.id?'selected':''}>${s.name}</option>`).join('')}</select></div>
@@ -453,7 +456,7 @@ function openLeadModal(id){
 function saveLead(id){
   const n=document.getElementById('f-nombre').value.trim(), t=document.getElementById('f-tel').value.trim();
   if(!n||!t){appAlert('Nombre y teléfono son requeridos');return;}
-  const data={nombre:n,tel:t,email:document.getElementById('f-email').value,tipo:document.getElementById('f-tipo').value,plaga:document.getElementById('f-plaga').value, canal:document.getElementById('f-canal').value, asesorId:document.getElementById('f-asesor').value, municipio:document.getElementById('f-muni').value,calle:document.getElementById('f-calle').value,stageId:document.getElementById('f-stage').value};
+  const data={nombre:n,tel:t,email:document.getElementById('f-email').value,tipo:document.getElementById('f-tipo').value,plaga:document.getElementById('f-plaga').value, canal:document.getElementById('f-canal').value, campanaId:document.getElementById('f-campana').value, asesorId:document.getElementById('f-asesor').value, municipio:document.getElementById('f-muni').value,calle:document.getElementById('f-calle').value,stageId:document.getElementById('f-stage').value};
   if(id){ 
       const item = DB.leads.find(x=>x.id===id);
       Object.assign(item, data); 
@@ -623,15 +626,24 @@ function renderCotTable(){
           <td>${l?.nombre||'—'}</td><td>${numVisitas} visita(s)</td>
           <td class="font-bold text-green-700">${fmt$(q.total)}</td>
           <td><span class="chip ${stClass}">${q.status.toUpperCase()}</span></td>
-          <td><div class="flex gap-1">
+          <td><div class="flex flex-wrap gap-1">
             ${['borrador','enviada'].includes(q.status)?`<button class="btn btn-outline py-1 text-xs" onclick="editQuote('${q.id}')">Editar</button>`:''}
             <button class="btn btn-navy py-1 text-xs" onclick="downloadQuotePDF('${q.id}')">📄 PDF</button>
             ${q.status==='borrador'?`<button class="btn btn-primary py-1 text-xs" onclick="changeQStatus('${q.id}','enviada')">✓ Enviada</button>`:''}
             ${q.status==='enviada'?`<button class="btn btn-green py-1 text-xs" onclick="changeQStatus('${q.id}','aceptada')">Aceptar</button> <button class="btn btn-danger py-1 text-xs" onclick="changeQStatus('${q.id}','rechazada')">Rechazar</button>`:''}
+            ${['borrador','enviada','rechazada'].includes(q.status)?`<button class="btn btn-outline py-1 text-xs text-red-500" onclick="delQuote('${q.id}')">✕</button>`:''}
           </div></td>
         </tr>`;
       }).join(''):'<tr><td colspan="6" class="text-center text-slate-400 py-8">Sin cotizaciones</td></tr>'}</tbody>
     </table></div>`;
+}
+
+function delQuote(id){
+    if(confirm('¿Seguro que deseas eliminar esta cotización?')){
+        DB.quotes = DB.quotes.filter(x=>x.id!==id);
+        dbDelete('pb_quotes', id);
+        renderCotTable();
+    }
 }
 
 // Regla 3: Múltiples visitas con montos independientes
@@ -639,7 +651,6 @@ function editQuote(id){
   const q = DB.quotes.find(x=>x.id===id);
   window._tmpQuote = JSON.parse(JSON.stringify(q));
   
-  // Retrocompatibilidad con cotizaciones antiguas
   if(!window._tmpQuote.visitas_detalle) {
       window._tmpQuote.visitas_detalle = Array.from({length: window._tmpQuote.visitas || 1}).map((_, i) => ({
           id: uid('vd'), concepto: 'Visita ' + (i+1), monto: window._tmpQuote.costoVisita || 0
@@ -716,7 +727,6 @@ async function changeQStatus(id,st){
     const l=DB.leads.find(x=>x.id===q.leadId);
     let newServs = [];
     
-    // Convertir el arreglo de visitas en servicios independientes
     const det = q.visitas_detalle || Array.from({length: q.visitas||1}).map((_,i)=>({concepto:'Visita '+(i+1), monto: q.costoVisita||0}));
     
     det.forEach((v, i) => {
@@ -732,7 +742,6 @@ async function changeQStatus(id,st){
     if(newServs.length) await supabaseClient.from('pb_services').upsert(newServs);
     
     if(l) { 
-        // Regla 2: Pasa automáticamente a "Programación" cuando se acepta
         const s4 = DB.stages.find(s=>s.order===3);
         if(s4) l.stageId = s4.id; 
         dbUpsert('pb_leads', l); 
@@ -911,7 +920,6 @@ function openQuickCobro(id){
     showModal(`
       <h3 class="text-lg font-bold text-navy mb-3">Confirmación de Pago y Gastos</h3>
       
-      <!-- Regla 5: Vista de gastos incluida directamente en Cobro -->
       <div class="bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
          <h4 class="font-bold text-sm text-red-900 mb-2">Gastos Operativos (Opcional)</h4>
          <p class="text-xs text-red-700 mb-3">Si tuviste gastos durante este servicio, regístralos aquí para que se liguen a finanzas.</p>
@@ -954,7 +962,7 @@ function addQCGasto() {
     s.gastos.push({id: financeId, concepto: c, monto: m, categoria: c});
     const nF = {
         id: financeId, tipo: 'gasto', categoria: c, monto: m, metodo: 'Efectivo',
-        fecha: Date.now(), ref: s.folio, desc: 'Gasto Op: ' + c
+        fecha: Date.now(), ref: s.folio, desc: 'Gasto Op: ' + c, isInvestment: false
     };
     DB.finances.push(nF);
 
@@ -980,7 +988,7 @@ function delQCGasto(idx) {
 function openSrvModal(id){
   const s=DB.services.find(x=>x.id===id), l=DB.leads.find(x=>x.id===s.leadId);
   const ro = isTecnico() ? 'readonly disabled' : ''; 
-  const isProg = currentPage === 'programacion'; // Regla 4
+  const isProg = currentPage === 'programacion';
 
   showModal(`
     <h3 class="text-lg font-extrabold mb-1 text-navy">Servicio ${s.folio}</h3>
@@ -1137,29 +1145,40 @@ function renderFin(){
   } else { fa.innerHTML=''; }
 
   const list=DB.finances.filter(f=>finP.mes<0||inPeriod(f.fecha,finP.mes,finP.anio));
-  const ing=list.filter(f=>f.tipo==='ingreso').reduce((a,b)=>a+b.monto,0);
-  const gas=list.filter(f=>f.tipo==='gasto').reduce((a,b)=>a+b.monto,0);
+  
+  const ingOp = list.filter(f=>f.tipo==='ingreso' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const gasOp = list.filter(f=>f.tipo==='gasto' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const utilidadOp = ingOp - gasOp;
+
+  const invTotal = list.filter(f=>f.tipo==='ingreso' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const invGasto = list.filter(f=>f.tipo==='gasto' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
+  const invDisp = invTotal - invGasto;
+
   document.getElementById('fin-content').innerHTML=`
-    <div class="grid grid-cols-3 gap-4 mb-4">
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-green)">💰</div><div><div class="kpi-val">${fmt$(ing)}</div><div class="kpi-lbl">Ingresos</div></div></div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:#dc2626">💸</div><div><div class="kpi-val">${fmt$(gas)}</div><div class="kpi-lbl">Gastos</div></div></div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-teal)">📈</div><div><div class="kpi-val">${fmt$(ing-gas)}</div><div class="kpi-lbl">Utilidad</div></div></div></div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-green)">💰</div><div><div class="kpi-val">${fmt$(ingOp)}</div><div class="kpi-lbl">Ingresos Op.</div></div></div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:#dc2626">💸</div><div><div class="kpi-val">${fmt$(gasOp)}</div><div class="kpi-lbl">Gastos Op.</div></div></div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-teal)">📈</div><div><div class="kpi-val">${fmt$(utilidadOp)}</div><div class="kpi-lbl">Utilidad Op.</div></div></div></div>
+      <div class="kpi bg-blue-50 border border-blue-200"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-blue)">🏦</div><div><div class="kpi-val text-blue-800">${fmt$(invTotal)}</div><div class="kpi-lbl">Fondo Inversión</div></div></div></div>
+      <div class="kpi bg-purple-50 border border-purple-200"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-purple)">📉</div><div><div class="kpi-val text-purple-800">${fmt$(invDisp)}</div><div class="kpi-lbl">Inversión Disp.</div></div></div></div>
     </div>
     <div class="card p-5"><div class="overflow-x-auto"><table>
       <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría/Método</th><th>Ref / Descripción</th><th class="text-right">Monto</th><th></th></tr></thead>
       <tbody>${list.length?list.sort((a,b)=>b.fecha-a.fecha).map(f=>`<tr>
-        <td>${fmtDate(f.fecha)}</td><td><span class="chip ${f.tipo==='ingreso'?'chip-green':'chip-red'}">${f.tipo.toUpperCase()}</span></td>
+        <td>${fmtDate(f.fecha)}</td>
+        <td><span class="chip ${f.tipo==='ingreso'?'chip-green':'chip-red'}">${f.tipo.toUpperCase()}</span> ${f.isInvestment?'<span class="chip chip-blue ml-1 mt-1">INVERSIÓN</span>':''}</td>
         <td><div class="text-sm">${f.categoria}</div><div class="text-xs text-slate-500">${f.metodo}</div></td>
         <td><div class="font-semibold text-sm text-navy">${f.ref||'—'}</div><div class="text-xs text-slate-500">${f.desc||'—'}</div></td>
         <td class="text-right font-bold ${f.tipo==='ingreso'?'text-green-700':'text-red-600'}">${fmt$(f.monto)}</td>
-        <td class="text-right"><button class="btn btn-ghost text-xs" onclick="editFin('${f.id}')">Editar</button></td>
+        <td class="text-right flex justify-end gap-1"><button class="btn btn-ghost text-xs" onclick="openFinModal(null, '${f.id}')">Editar</button><button class="btn btn-ghost text-xs text-red-500" onclick="delFin('${f.id}')">✕</button></td>
       </tr>`).join(''):'<tr><td colspan="6" class="text-center text-slate-400 py-8">Sin movimientos en este periodo</td></tr>'}</tbody>
     </table></div></div>`;
 }
+
 function authCobro(srvId, approved){
   const s=DB.services.find(x=>x.id===srvId);
   if(approved){
-    const newF = {id:uid('F'), tipo:'ingreso', categoria:'Servicio', monto:s.cobro.monto, metodo:s.cobro.metodo, fecha:Date.now(), ref:s.folio, desc:'Cobro de Servicio'};
+    const newF = {id:uid('F'), tipo:'ingreso', categoria:'Servicio', monto:s.cobro.monto, metodo:s.cobro.metodo, fecha:Date.now(), ref:s.folio, desc:'Cobro de Servicio', isInvestment: false};
     DB.finances.push(newF);
     dbUpsert('pb_finances', newF);
     s.status='finalizado'; 
@@ -1171,47 +1190,72 @@ function authCobro(srvId, approved){
   dbUpsert('pb_services', s);
   renderFinanzas(document.getElementById('page-content'));
 }
-function openFinModal(tipo){
-  const cats=tipo==='ingreso'?DB.catalogs.categoriasIngreso:DB.catalogs.categoriasGasto;
+
+function openFinModal(tipo, id=null){
+  const f = id ? DB.finances.find(x=>x.id===id) : null;
+  const t = f ? f.tipo : tipo;
+  const cats = t==='ingreso' ? DB.catalogs.categoriasIngreso : DB.catalogs.categoriasGasto;
   showModal(`
-    <h3 class="text-lg font-bold mb-3 text-navy">Nuevo ${tipo}</h3>
+    <h3 class="text-lg font-bold mb-3 text-navy">${id?'Editar':'Nuevo'} ${t}</h3>
     <div class="grid grid-cols-2 gap-3">
-      <div><label class="label">Monto</label><input id="ff-m" type="number" class="input"/></div>
-      <div><label class="label">Categoría</label><select id="ff-c" class="select">${cats.map(c=>`<option>${c}</option>`).join('')}</select></div>
-      <div><label class="label">Método</label><select id="ff-met" class="select">${DB.catalogs.metodosPago.map(m=>`<option>${m}</option>`).join('')}</select></div>
-      <div><label class="label">Fecha</label><input id="ff-f" type="date" class="input" value="${new Date().toISOString().slice(0,10)}"/></div>
-      <div class="col-span-2"><label class="label">Descripción</label><input id="ff-d" class="input"/></div>
+      <div><label class="label">Monto</label><input id="ff-m" type="number" class="input" value="${f?f.monto:''}"/></div>
+      <div><label class="label">Categoría</label><select id="ff-c" class="select">${cats.map(c=>`<option ${f&&f.categoria===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label class="label">Método</label><select id="ff-met" class="select">${DB.catalogs.metodosPago.map(m=>`<option ${f&&f.metodo===m?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div><label class="label">Fecha</label><input id="ff-f" type="date" class="input" value="${f ? new Date(f.fecha).toISOString().slice(0,10) : new Date().toISOString().slice(0,10)}"/></div>
+      <div class="col-span-2"><label class="label">Descripción</label><input id="ff-d" class="input" value="${f?f.desc||'':''}"/></div>
+      
+      <div class="col-span-2 bg-slate-50 p-3 rounded border border-slate-200">
+         <label class="flex items-center gap-2 font-bold text-sm text-navy cursor-pointer">
+            <input type="checkbox" id="ff-inv" ${f&&f.isInvestment?'checked':''} class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
+            Registrar como movimiento de Inversión / Capital
+         </label>
+         <p class="text-xs text-slate-500 mt-1 ml-6">Activa esta casilla si este movimiento pertenece a fondos de aportación, préstamos o gastos en equipo mayor (CAPEX) para que no afecte la utilidad operativa.</p>
+      </div>
     </div>
-    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveFin('${tipo}')">Guardar</button></div>`);
+    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveFin('${t}', '${id||''}')">Guardar</button></div>`);
 }
-function editFin(id){
-  const f=DB.finances.find(x=>x.id===id); const cats=f.tipo==='ingreso'?DB.catalogs.categoriasIngreso:DB.catalogs.categoriasGasto;
-  showModal(`
-    <h3 class="text-lg font-bold mb-3 text-navy">Editar Registro</h3>
-    <div class="grid grid-cols-2 gap-3">
-      <div><label class="label">Monto</label><input id="ff-m" type="number" class="input" value="${f.monto}"/></div>
-      <div><label class="label">Categoría</label><select id="ff-c" class="select">${cats.map(c=>`<option ${f.categoria===c?'selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="col-span-2"><label class="label">Descripción</label><input id="ff-d" class="input" value="${f.desc||''}"/></div>
-    </div>
-    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="updateFin('${id}')">Guardar</button></div>`);
-}
-function saveFin(tipo){
-  const nF = {id:uid('F'), tipo, monto:+document.getElementById('ff-m').value, categoria:document.getElementById('ff-c').value, metodo:document.getElementById('ff-met').value, fecha:new Date(document.getElementById('ff-f').value).getTime(), desc:document.getElementById('ff-d').value};
-  DB.finances.push(nF);
-  dbUpsert('pb_finances', nF);
-  closeModal(); renderFin();
-}
-function updateFin(id){
-  const f=DB.finances.find(x=>x.id===id); f.monto=+document.getElementById('ff-m').value; f.categoria=document.getElementById('ff-c').value; f.desc=document.getElementById('ff-d').value;
-  dbUpsert('pb_finances', f);
+
+function saveFin(tipo, id){
+  const d = {
+      monto: +document.getElementById('ff-m').value,
+      categoria: document.getElementById('ff-c').value,
+      metodo: document.getElementById('ff-met').value,
+      fecha: new Date(document.getElementById('ff-f').value + 'T12:00:00').getTime(), 
+      desc: document.getElementById('ff-d').value,
+      isInvestment: document.getElementById('ff-inv').checked
+  };
+  
+  if(id){
+     const f = DB.finances.find(x=>x.id===id);
+     Object.assign(f, d);
+     dbUpsert('pb_finances', f);
+  } else {
+     const nF = {id:uid('F'), tipo, ...d};
+     DB.finances.push(nF);
+     dbUpsert('pb_finances', nF);
+  }
   closeModal(); renderFin();
 }
 
+function delFin(id){
+   if(confirm('¿Seguro que deseas eliminar este registro financiero?')){
+       DB.finances = DB.finances.filter(x=>x.id!==id);
+       dbDelete('pb_finances', id);
+       renderFin();
+   }
+}
+
 function renderMarketing(c){
+  const mkData = DB.marketing.map(m => {
+      const mLeads = DB.leads.filter(l => l.campanaId === m.id).length;
+      const mClientes = DB.leads.filter(l => l.campanaId === m.id && l.stageId === DB.settings.stageWonId).length;
+      return { ...m, totalLeads: mLeads + (m.leads||0), totalClientes: mClientes + (m.clientes||0) };
+  });
+
   c.innerHTML=`
   <div class="flex justify-between items-center mb-4">
-    <div class="text-sm text-slate-500">Métricas globales y por canal basados en el último semestre</div>
-    <button class="btn btn-green" onclick="openMktModal()">+ Cargar Campaña Mensual</button>
+    <div class="text-sm text-slate-500">Métricas globales y por campaña basados en historial dinámico</div>
+    <button class="btn btn-green" onclick="openMktModal()">+ Crear Campaña MKT</button>
   </div>
   
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -1230,14 +1274,32 @@ function renderMarketing(c){
   
   <div class="card p-5">
     <h3 class="font-bold text-navy mb-4">Registro de Campañas</h3>
-    <table class="w-full text-sm"><thead><tr><th>Canal</th><th>Mes/Año</th><th>Inversión</th><th>Leads</th><th>Clientes</th><th>CPL</th></tr></thead><tbody>${DB.marketing.sort((a,b)=>b.mes-a.mes).map(m=>`<tr><td><span class="chip chip-teal">${m.canal}</span></td><td>${MESES[m.mes]} ${m.anio}</td><td class="text-red-500">${fmt$(m.inversion)}</td><td class="font-bold">${m.leads}</td><td class="font-bold text-green-600">${m.clientes}</td><td>${fmt$(m.leads?m.inversion/m.leads:0)}</td></tr>`).join('')}</tbody></table>
+    <div class="overflow-x-auto"><table class="w-full text-sm">
+        <thead><tr><th>Nombre / Canal</th><th>Mes/Año</th><th>Inversión</th><th>Leads</th><th>Clientes</th><th>CPL</th><th>Acciones</th></tr></thead>
+        <tbody>${mkData.sort((a,b)=>b.mes-a.mes).map(m=>`<tr>
+            <td><div class="font-bold text-navy">${m.nombre||'Campaña sin nombre'}</div><span class="chip chip-teal mt-1">${m.canal}</span></td>
+            <td>${MESES[m.mes]} ${m.anio}</td>
+            <td class="text-red-500">${fmt$(m.inversion)}</td>
+            <td class="font-bold">${m.totalLeads}</td>
+            <td class="font-bold text-green-600">${m.totalClientes}</td>
+            <td>${fmt$(m.totalLeads ? m.inversion/m.totalLeads : 0)}</td>
+            <td><div class="flex gap-1"><button class="btn btn-outline py-1 text-xs" onclick="openMktModal('${m.id}')">Editar</button><button class="btn btn-danger py-1 text-xs" onclick="delMkt('${m.id}')">✕</button></div></td>
+        </tr>`).join('')}</tbody>
+    </table></div>
   </div>`;
   setTimeout(drawMarketingCharts, 100);
 }
 
 function drawMarketingCharts() {
     destroyCharts('mkt');
-    const mk = DB.marketing;
+    
+    // Mapeo dinámico
+    const mk = DB.marketing.map(m => {
+        const mLeads = DB.leads.filter(l => l.campanaId === m.id).length;
+        const mClientes = DB.leads.filter(l => l.campanaId === m.id && l.stageId === DB.settings.stageWonId).length;
+        return { ...m, leads: mLeads + (m.leads||0), clientes: mClientes + (m.clientes||0) };
+    });
+
     const totals = mk.reduce((acc, c) => {
         acc.i += c.inversion; acc.l += c.leads; acc.cl += c.clientes; return acc;
     }, {i:0, l:0, cl:0});
@@ -1296,24 +1358,46 @@ function drawMarketingCharts() {
     });
 }
 
-function openMktModal(){
+function openMktModal(id=null){
+  const m = id ? DB.marketing.find(x=>x.id===id) : {canal:DB.catalogs.canalesMkt[0], nombre:'', inversion:0, mes:new Date().getMonth(), anio:new Date().getFullYear()};
   showModal(`
-    <h3 class="text-lg font-bold mb-3 text-navy">Nueva Campaña Mensual</h3>
+    <h3 class="text-lg font-bold mb-3 text-navy">${id?'Editar':'Nueva'} Campaña MKT</h3>
     <div class="grid grid-cols-2 gap-3">
-      <div><label class="label">Canal</label><select id="mf-c" class="select">${DB.catalogs.canalesMkt.map(c=>`<option>${c}</option>`).join('')}</select></div>
-      <div><label class="label">Inversión MXN</label><input id="mf-i" type="number" class="input"/></div>
-      <div><label class="label">Total Leads Generados</label><input id="mf-l" type="number" class="input"/></div>
-      <div><label class="label">Total Clientes Convertidos</label><input id="mf-cl" type="number" class="input"/></div>
-      <div><label class="label">Mes</label><select id="mf-m" class="select">${MESES.map((m,i)=>`<option value="${i}" ${i===new Date().getMonth()?'selected':''}>${m}</option>`).join('')}</select></div>
-      <div><label class="label">Año</label><select id="mf-a" class="select">${[2024,2025,2026].map(y=>`<option ${y===new Date().getFullYear()?'selected':''}>${y}</option>`).join('')}</select></div>
+      <div class="col-span-2"><label class="label">Nombre de Campaña *</label><input id="mf-n" class="input" value="${m.nombre||''}"/></div>
+      <div><label class="label">Canal</label><select id="mf-c" class="select">${DB.catalogs.canalesMkt.map(c=>`<option ${m.canal===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label class="label">Inversión MXN</label><input id="mf-i" type="number" class="input" value="${m.inversion}"/></div>
+      <div><label class="label">Mes</label><select id="mf-m" class="select">${MESES.map((mes,i)=>`<option value="${i}" ${i===m.mes?'selected':''}>${mes}</option>`).join('')}</select></div>
+      <div><label class="label">Año</label><select id="mf-a" class="select">${[2024,2025,2026].map(y=>`<option ${y===m.anio?'selected':''}>${y}</option>`).join('')}</select></div>
     </div>
-    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveMkt()">Guardar</button></div>`);
+    <div class="flex gap-2 mt-4 justify-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="saveMkt('${id||''}')">Guardar</button></div>`);
 }
-function saveMkt(){
-  const nM = {id:uid('M'), canal:document.getElementById('mf-c').value, inversion:+document.getElementById('mf-i').value, leads:+document.getElementById('mf-l').value, clientes:+document.getElementById('mf-cl').value, mes:+document.getElementById('mf-m').value, anio:+document.getElementById('mf-a').value};
-  DB.marketing.push(nM);
-  dbUpsert('pb_marketing', nM);
+
+function saveMkt(id){
+  const d = {
+      nombre: document.getElementById('mf-n').value,
+      canal: document.getElementById('mf-c').value,
+      inversion: +document.getElementById('mf-i').value,
+      mes: +document.getElementById('mf-m').value,
+      anio: +document.getElementById('mf-a').value
+  };
+  if(id){
+      const m = DB.marketing.find(x=>x.id===id);
+      Object.assign(m, d);
+      dbUpsert('pb_marketing', m);
+  } else {
+      const nM = {id:uid('M'), ...d, leads:0, clientes:0};
+      DB.marketing.push(nM);
+      dbUpsert('pb_marketing', nM);
+  }
   closeModal(); renderMarketing(document.getElementById('page-content'));
+}
+
+function delMkt(id){
+    if(confirm('¿Seguro que deseas eliminar esta campaña?')){
+        DB.marketing = DB.marketing.filter(x=>x.id!==id);
+        dbDelete('pb_marketing', id);
+        renderMarketing(document.getElementById('page-content'));
+    }
 }
 
 function renderProdVentas(c){
@@ -1414,7 +1498,7 @@ function drawTecnicosCharts() {
 
 function renderDashboard(c){
   const leadsActivos = DB.leads.filter(l=>l.status==='activo').length;
-  const ingresosTotales = DB.finances.filter(f=>f.tipo==='ingreso').reduce((a,b)=>a+b.monto,0);
+  const ingresosTotales = DB.finances.filter(f=>f.tipo==='ingreso' && !f.isInvestment).reduce((a,b)=>a+b.monto,0);
   const cotAceptadas = DB.quotes.filter(q=>q.status==='aceptada').length;
   const srvFinalizados = DB.services.filter(s=>s.status==='finalizado').length;
 
@@ -1424,7 +1508,7 @@ function renderDashboard(c){
   c.innerHTML=`
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
       <div class="kpi card-soft"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-blue)">👥</div><div><div class="kpi-val">${leadsActivos}</div><div class="kpi-lbl">Leads Activos</div></div></div></div>
-      <div class="kpi card-soft"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-green)">💰</div><div><div class="kpi-val">${fmt$(ingresosTotales)}</div><div class="kpi-lbl">Ingresos Globales</div></div></div></div>
+      <div class="kpi card-soft"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-green)">💰</div><div><div class="kpi-val">${fmt$(ingresosTotales)}</div><div class="kpi-lbl">Ingresos Operativos</div></div></div></div>
       <div class="kpi card-soft"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-purple)">📄</div><div><div class="kpi-val">${cotAceptadas}</div><div class="kpi-lbl">Cotiz. Aceptadas</div></div></div></div>
       <div class="kpi card-soft"><div class="kpi-top"><div class="kpi-ic" style="background:var(--pb-orange)">🛠️</div><div><div class="kpi-val">${srvFinalizados}</div><div class="kpi-lbl">Srv. Operados</div></div></div></div>
     </div>
@@ -1435,13 +1519,13 @@ function renderDashboard(c){
         <div class="relative h-64"><canvas id="ch-funnel"></canvas></div>
       </div>
       <div class="card p-5 lg:col-span-2 shadow-sm">
-        <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Desglose de Gastos (Últimos 6 meses)</h3>
+        <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Desglose de Gastos Op. (Últimos 6 meses)</h3>
         <div class="relative h-64"><canvas id="ch-gastos"></canvas></div>
       </div>
     </div>
 
     <div class="card p-5 mb-4 shadow-sm">
-      <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Evolución de Ingresos y Gastos</h3>
+      <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Evolución de Ingresos y Gastos Op.</h3>
       <div class="relative h-72"><canvas id="ch-ingresos"></canvas></div>
     </div>
 
@@ -1513,7 +1597,7 @@ function drawDashboardCharts() {
   const cats = DB.catalogs.categoriasGasto;
   const gastosData = cats.map(cat => monthsInfo.keys.map(k => {
       const [y, m] = k.split('-');
-      return DB.finances.filter(f => f.tipo==='gasto' && f.categoria===cat && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0);
+      return DB.finances.filter(f => f.tipo==='gasto' && !f.isInvestment && f.categoria===cat && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0);
   }));
   const colors = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#14b8a6','#06b6d4','#0ea5e9'];
   dashCharts.dash.c2 = new Chart(document.getElementById('ch-gastos'), {
@@ -1521,15 +1605,15 @@ function drawDashboardCharts() {
       options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid:{display:false} }, y: { stacked: true, border:{display:false} } }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, font: {size:10} } } } }
   });
 
-  const ingresosData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='ingreso' && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
-  const gastosTotalData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='gasto' && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
+  const ingresosData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='ingreso' && !f.isInvestment && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
+  const gastosTotalData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='gasto' && !f.isInvestment && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
 
   const ctx3 = document.getElementById('ch-ingresos').getContext('2d');
   let gradient = ctx3.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(17, 153, 158, 0.4)'); gradient.addColorStop(1, 'rgba(17, 153, 158, 0.0)');
   dashCharts.dash.c3 = new Chart(ctx3, {
       type: 'line', data: { labels: monthsInfo.labels, datasets: [
-          { label: 'Ingresos', data: ingresosData, borderColor: '#11999E', backgroundColor: gradient, borderWidth: 3, fill: true, tension: 0.4 },
-          { label: 'Gastos', data: gastosTotalData, borderColor: '#ef4444', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0.4 }
+          { label: 'Ingresos Op.', data: ingresosData, borderColor: '#11999E', backgroundColor: gradient, borderWidth: 3, fill: true, tension: 0.4 },
+          { label: 'Gastos Op.', data: gastosTotalData, borderColor: '#ef4444', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0.4 }
       ]},
       options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid:{display:false} }, y: { border:{display:false}, beginAtZero: true } }, plugins: { tooltip: { mode: 'index', intersect: false } } }
   });
@@ -1597,8 +1681,8 @@ function renderCfgCats(){
     </div>`).join('');
 }
 function exportCSV(){
-  const rows=[['ID','Nombre','Tel','Municipio','Tipo','Canal','Plaga','Score','Etapa','Status']];
-  DB.leads.forEach(l=>{ rows.push([l.id, l.nombre, l.tel, l.municipio, l.tipo, l.canal||'', l.plaga, l.score, DB.stages.find(x=>x.id===l.stageId)?.name, l.status]); });
+  const rows=[['ID','Nombre','Tel','Municipio','Tipo','Canal','Campaña ID','Plaga','Score','Etapa','Status']];
+  DB.leads.forEach(l=>{ rows.push([l.id, l.nombre, l.tel, l.municipio, l.tipo, l.canal||'', l.campanaId||'', l.plaga, l.score, DB.stages.find(x=>x.id===l.stageId)?.name, l.status]); });
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n')); a.download='clientes.csv'; a.click();
 }
 
