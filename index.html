@@ -228,9 +228,7 @@ async function dbUpsert(table, data) {
     const { error } = await supabaseClient.from(table).upsert(data);
     if (error) {
         console.error(`Error Upsert en ${table}:`, error.message);
-        if(error.message.includes("does not exist") || error.message.includes("column")) {
-            alert(`⚠️ Error de Base de Datos ⚠️\nFalta una columna en la tabla "${table}".\nDetalle: ${error.message}\n\nPor favor asegúrate de ejecutar el script SQL en Supabase para crear las columnas necesarias.`);
-        }
+        alert(`⚠️ ERROR EN SUPABASE ⚠️\n\nNo se guardó el registro en la tabla "${table}".\nDetalle: ${error.message}\n\n-> Asegúrate de haber ejecutado el código SQL en Supabase para crear las nuevas columnas.`);
     }
 }
 async function dbDelete(table, id) {
@@ -268,6 +266,34 @@ async function loadDB(){
                 catalogs: configData.catalogs, company: configData.company, 
                 stages: configData.stages, settings: configData.settings
             };
+
+            // --- INICIO: PARCHE DE NORMALIZACIÓN Y LIMPIEZA ---
+            
+            // 1. Normalización: PostgreSQL suele devolver columnas en minúsculas. 
+            // Esto asegura que JavaScript reciba correctamente la información de MKT e Inversiones.
+            DB.finances.forEach(fin => {
+                fin.isInvestment = fin.isInvestment !== undefined ? fin.isInvestment : (fin.isinvestment === true);
+            });
+            DB.leads.forEach(ld => {
+                ld.campanaId = ld.campanaId !== undefined ? ld.campanaId : (ld.campanaid || '');
+            });
+
+            // 2. Limpieza de Base de Datos (Bug de versiones anteriores):
+            // Detectamos si hay gastos en Finanzas que pertenecen a servicios "Pendientes de Autorización"
+            // y los borramos automáticamente de Finanzas para corregir tu visualización.
+            const pendingExpenseIds = new Set();
+            DB.services.filter(srv => srv.status === 'cobro_pendiente').forEach(srv => {
+                if (srv.gastos) srv.gastos.forEach(g => pendingExpenseIds.add(g.id));
+            });
+            
+            if (pendingExpenseIds.size > 0) {
+                // Los sacamos de la memoria al instante
+                DB.finances = DB.finances.filter(fin => !pendingExpenseIds.has(fin.id));
+                // Los eliminamos físicamente de Supabase de manera silenciosa
+                pendingExpenseIds.forEach(id => supabaseClient.from('pb_finances').delete().eq('id', id).then());
+            }
+            
+            // --- FIN: PARCHE ---
         }
     } catch(e) {
         console.error('Error general de conexión:', e);
