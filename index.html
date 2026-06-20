@@ -1548,7 +1548,7 @@ function renderDashboard(c){
   const percUtil = ingOp > 0 ? ((utilOp / ingOp) * 100).toFixed(1) : 0;
   
   const invRecibidas = DB.finances.filter(f=>f.tipo==='ingreso' && f.isInvestment).reduce((a,b)=>a+b.monto,0);
-  const gastoMkt = DB.marketing.reduce((a,b)=>a+b.inversion,0);
+  const gastoMkt = DB.finances.filter(f=>f.tipo==='gasto' && f.categoria==='Marketing').reduce((a,b)=>a+b.monto,0);
 
   const ultimosServicios = DB.services.filter(s=>s.fecha && s.status!=='finalizado' && s.status!=='cancelado').sort((a,b)=>a.fecha-b.fecha).slice(0,5);
   const ultimosMovimientos = DB.finances.sort((a,b)=>b.fecha-a.fecha).slice(0,5);
@@ -1568,7 +1568,7 @@ function renderDashboard(c){
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
       <div class="card p-5 lg:col-span-1 shadow-sm">
-        <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Leads por Tipo de Servicio</h3>
+        <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Leads por Tipo de Plaga</h3>
         <div class="relative h-64"><canvas id="ch-funnel"></canvas></div>
       </div>
       <div class="card p-5 lg:col-span-2 shadow-sm">
@@ -1578,7 +1578,7 @@ function renderDashboard(c){
     </div>
 
     <div class="card p-5 mb-4 shadow-sm">
-      <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Evolución General de Ingresos y Gastos</h3>
+      <h3 class="font-bold text-navy mb-4 text-xs uppercase tracking-widest text-slate-500">Evolución Operativa de Ingresos y Gastos</h3>
       <div class="relative h-72"><canvas id="ch-ingresos"></canvas></div>
     </div>
 
@@ -1639,11 +1639,12 @@ function drawDashboardCharts() {
   destroyCharts('dash');
 
   const allLeads = DB.leads.filter(l=>l.status==='activo');
-  const tipos = DB.catalogs.tiposCliente;
-  const tipoCounts = tipos.map(t => allLeads.filter(l=>l.tipo===t).length);
-  const donutColors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#ec4899','#14b8a6'];
+  
+  const plagas = DB.catalogs.plagas;
+  const plagaCounts = plagas.map(p => allLeads.filter(l=>l.plaga===p).length);
+  const donutColors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#ec4899','#14b8a6','#64748b'];
   dashCharts.dash.c1 = new Chart(document.getElementById('ch-funnel'), {
-      type: 'doughnut', data: { labels: tipos, datasets: [{ data: tipoCounts, backgroundColor: donutColors.slice(0, tipos.length), borderWidth: 0, cutout: '70%' }] },
+      type: 'doughnut', data: { labels: plagas, datasets: [{ data: plagaCounts, backgroundColor: donutColors.slice(0, plagas.length), borderWidth: 0, cutout: '70%' }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, font: {size:10} } } } }
   });
 
@@ -1652,7 +1653,6 @@ function drawDashboardCharts() {
   const cats = DB.catalogs.categoriasGasto;
   const gastosData = cats.map(cat => monthsInfo.keys.map(k => {
       const [y, m] = k.split('-');
-      // Gasto general: Eliminamos la condición !f.isInvestment
       return DB.finances.filter(f => f.tipo==='gasto' && f.categoria===cat && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0);
   }));
   const colors = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#14b8a6','#06b6d4','#0ea5e9'];
@@ -1661,16 +1661,15 @@ function drawDashboardCharts() {
       options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid:{display:false} }, y: { stacked: true, border:{display:false} } }, plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, font: {size:10} } } } }
   });
 
-  // Ingresos y Gastos Generales (Evolución)
-  const ingresosData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='ingreso' && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
-  const gastosTotalData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='gasto' && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
+  const ingresosData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='ingreso' && !f.isInvestment && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
+  const gastosTotalData = monthsInfo.keys.map(k => { const [y, m] = k.split('-'); return DB.finances.filter(f => f.tipo==='gasto' && !f.isInvestment && new Date(f.fecha).getFullYear()==y && new Date(f.fecha).getMonth()==m).reduce((a,b)=>a+b.monto,0); });
 
   const ctx3 = document.getElementById('ch-ingresos').getContext('2d');
   let gradient = ctx3.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(17, 153, 158, 0.4)'); gradient.addColorStop(1, 'rgba(17, 153, 158, 0.0)');
   dashCharts.dash.c3 = new Chart(ctx3, {
       type: 'line', data: { labels: monthsInfo.labels, datasets: [
-          { label: 'Ingresos Totales', data: ingresosData, borderColor: '#11999E', backgroundColor: gradient, borderWidth: 3, fill: true, tension: 0.4 },
-          { label: 'Gastos Totales', data: gastosTotalData, borderColor: '#ef4444', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0.4 }
+          { label: 'Ingresos Operativos', data: ingresosData, borderColor: '#11999E', backgroundColor: gradient, borderWidth: 3, fill: true, tension: 0.4 },
+          { label: 'Gastos Operativos', data: gastosTotalData, borderColor: '#ef4444', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0.4 }
       ]},
       options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid:{display:false} }, y: { border:{display:false}, beginAtZero: true } }, plugins: { tooltip: { mode: 'index', intersect: false } } }
   });
